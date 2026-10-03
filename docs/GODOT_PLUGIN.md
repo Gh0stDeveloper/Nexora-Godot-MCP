@@ -189,3 +189,10 @@ Filesystem/resource writes such as scene duplication and import rescans are not 
 Resource inspection uses `ResourceLoader` and serializes only a bounded set of stored properties into JSON-safe values.
 
 Filesystem refresh/reimport uses `EditorInterface.get_resource_filesystem()`. Reimport operations refuse to start while the editor filesystem is already scanning/importing.
+
+
+## Godot 4.6 scene-discard safety
+
+Godot 4.6 exposes open-scene information but does not provide a stable `EditorInterface` API for listing every unsaved scene. Because `close_scene()` discards pending changes, Nexora Godot MCP does not guess.
+
+`scene_close` and `scene_reload` therefore require `confirm_discard=true` every time. This conservative gate protects manual editor work even when the MCP cannot determine dirty-tab state.
