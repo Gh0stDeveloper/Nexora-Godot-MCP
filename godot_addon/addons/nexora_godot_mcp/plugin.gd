@@ -348,6 +348,10 @@ func _batch_execute(params: Dictionary) -> Dictionary:
 			"scene.reload": true,
 			"scene.create": true,
 			"scene.duplicate": true,
+			"input.action_delete": true,
+			"input.event_remove": true,
+			"project.settings_clear": true,
+			"autoload.remove": true,
 		}
 		if forbidden.has(operation):
 			var blocked := {
