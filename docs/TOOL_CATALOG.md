@@ -69,9 +69,9 @@ Permission: standard/write.
 
 ### `scene_create`
 
-Creates a new scene root and saves it as `.tscn`.
+Creates a new PackedScene resource and saves it as `.tscn` without discarding the currently edited scene.
 
-If another scene is active, replacement must be explicit with `replace_current=true`. Unsaved active-scene changes additionally require `confirm_discard=true`.
+The new scene can optionally be opened after creation. Existing destinations require `overwrite=true`, and an open scene is never overwritten.
 
 Permission: standard/write.
 
@@ -273,7 +273,7 @@ Runs `--export-pack`.
 
 Permission: standard/write.
 
-Exports remain inside the configured project root in Phase A.
+Exports remain inside the configured project root.
 
 ## Batch
 
@@ -281,7 +281,7 @@ Exports remain inside the configured project root in Phase A.
 
 Executes up to 50 structured editor operations.
 
-Nested batches are rejected.
+Nested batches are rejected. Destructive lifecycle operations such as node deletion, scene close/reload/create and scene overwrite/duplication are deliberately blocked inside batches so their dedicated confirmation or overwrite gates cannot be bypassed.
 
 Permission: standard/write.
 
