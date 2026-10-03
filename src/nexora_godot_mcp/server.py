@@ -532,10 +532,12 @@ async def _export(
     _assert_permission(mutating=True)
     target = _project_file(output_path)
     result = await runner.export(mode=mode, preset=preset, output_path=target)
+    returncode = result.get("returncode")
+    succeeded = isinstance(returncode, int) and returncode == 0
     request_id = _audit_cli(
         operation=f"export.{mode}",
         params={"preset": preset, "output_path": str(target)},
-        status="ok" if int(result.get("returncode", 1)) == 0 else "error",
+        status="ok" if succeeded else "error",
     )
     return {"request_id": request_id, **result}
 
