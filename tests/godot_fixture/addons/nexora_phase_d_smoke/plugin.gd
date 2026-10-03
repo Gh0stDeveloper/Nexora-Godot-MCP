@@ -154,20 +154,21 @@ func _run_smoke() -> void:
 	if _failed("tile layer", tile_layer_result):
 		return
 
-	var root := EditorInterface.get_edited_scene_root()
-	var tile_layer := root.get_node_or_null("Ground") as TileMapLayer
-	if tile_layer == null or tile_layer.tile_set == null:
-		print("NEXORA_PHASE_D_SMOKE_FAIL tile layer missing")
+	var atlas_result: Dictionary = phase_d.execute(
+		"tileset.atlas_source_add",
+		{
+			"node_path": "Ground",
+			"texture_path": "res://phase_d_texture.svg",
+			"texture_region_size": [32, 32],
+			"tiles": [[0, 0]],
+		}
+	)
+	if _failed("tileset atlas", atlas_result):
 		return
-	var texture := ResourceLoader.load("res://phase_d_texture.svg", "Texture2D")
-	if not texture is Texture2D:
-		print("NEXORA_PHASE_D_SMOKE_FAIL texture import")
+	var source_id := int(atlas_result.get("source_id", -1))
+	if source_id < 0:
+		print("NEXORA_PHASE_D_SMOKE_FAIL invalid source id: ", atlas_result)
 		return
-	var atlas := TileSetAtlasSource.new()
-	atlas.texture = texture
-	atlas.texture_region_size = Vector2i(32, 32)
-	atlas.create_tile(Vector2i(0, 0))
-	var source_id := tile_layer.tile_set.add_source(atlas)
 
 	var cells: Dictionary = phase_d.execute(
 		"tilemap.set_cells",
