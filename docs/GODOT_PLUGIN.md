@@ -16,6 +16,7 @@ godot_addon/
         ├── plugin.gd
         ├── phase_b.gd
         ├── phase_c.gd
+        ├── phase_d.gd
         └── bridge_server.gd
 ```
 
@@ -156,8 +157,6 @@ Generic property editing intentionally blocks sensitive fields that should recei
 
 ## Future plugin work
 
-- structured UI builders;
-- 2D authoring helpers;
 - debugger integration;
 - screenshot capture;
 - animation/resource authoring operations.
@@ -213,3 +212,25 @@ Script attachment and signal connection changes use the editor Undo/Redo history
 Input Map actions are read and written directly through the project's `input/*` entries in `ProjectSettings`. This is intentional: inside an editor plugin, the `InputMap` singleton can represent editor actions rather than the project's bindings. Generic settings tools deliberately reject the `input/`, `autoload/` and `editor_plugins/` namespaces so callers cannot bypass the typed tools.
 
 Autoload operations use the EditorPlugin autoload API and never delete the underlying script/scene when a registration is removed.
+
+
+## Phase D UI and 2D production layer
+
+Phase D adds typed editor operations for:
+
+- Control and Container creation;
+- responsive anchors/offsets and common layout presets;
+- Theme resources and local theme overrides;
+- text updates;
+- HUD and menu scaffolds;
+- Sprite2D and AnimatedSprite2D authoring;
+- TileMapLayer creation and TileMap/TileMapLayer inspection;
+- undoable TileMap cell updates;
+- Camera2D;
+- structured CollisionShape2D and 2D collision-body workflows.
+
+UI/node creation and TileMap changes participate in the editor Undo/Redo history.
+
+Theme paths and texture paths remain project-local resources. AnimatedSprite2D creation is bounded to 32 animations and 256 frames per call.
+
+TileMap cell erasure is never implicit: a cell update with `source_id=-1` requires an explicit `confirm_erase=true` request at the MCP gateway and is checked again by the editor bridge.
