@@ -6,6 +6,7 @@
 
 A free, open-source and local-first MCP automation platform I designed to let AI systems work directly with Godot projects through structured, auditable and permission-aware operations.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Gh0stDeveloper/Nexora-Godot-MCP/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/Gh0stDeveloper/Nexora-Godot-MCP/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Godot](https://img.shields.io/badge/Godot-4.6%2B-478CBF?style=for-the-badge&logo=godotengine&logoColor=white)](https://godotengine.org/)
@@ -59,7 +60,7 @@ My goal is to let an AI participate in real Godot development instead of only ex
 
 ## What it is designed to do
 
-| Area | Planned capability |
+| Area | Direction |
 | --- | --- |
 | Projects | inspect, create, open, import, settings, feature detection |
 | Scenes | create, open, save, duplicate, instance, inspect scene tree |
@@ -86,6 +87,67 @@ My goal is to let an AI participate in real Godot development instead of only ex
 | Batch | execute validated multi-step Godot operations |
 
 See [docs/TOOL_CATALOG.md](docs/TOOL_CATALOG.md) for the proposed MCP surface.
+
+---
+
+## Current implementation
+
+The Phase A foundation is implemented on the development branch and establishes the real execution path instead of only documenting a future design.
+
+Current MCP tools include:
+
+- `godot_status` and `nexora_capabilities`;
+- project inspection, validation and headless import;
+- current-scene snapshot/open/save/create;
+- node creation, property updates and confirmed deletion;
+- GDScript/C# read/create/revision-aware replacement;
+- managed project runs with explicit `run_id`, status, logs and stop;
+- export preset discovery;
+- debug, release and PCK/ZIP exports;
+- bounded structured batch execution.
+
+The Godot addon already provides a loopback-only bridge and a compact editor dock. The Python gateway keeps MCP/authentication logic outside the editor.
+
+## Quick start
+
+Requirements:
+
+- Python 3.11+
+- `uv`
+- Godot 4.6+ editor
+- an existing Godot project
+
+```bash
+git clone https://github.com/Gh0stDeveloper/Nexora-Godot-MCP.git
+cd Nexora-Godot-MCP
+uv sync --all-extras
+
+uv run nexora-godot setup --project /path/to/MyGame
+```
+
+Open or restart that project in Godot so the installed editor plugin starts its private bridge.
+
+Then validate the installation:
+
+```bash
+uv run nexora-godot doctor
+```
+
+Start the MCP gateway:
+
+```bash
+uv run nexora-godot start
+```
+
+Default endpoints:
+
+```text
+MCP:           http://127.0.0.1:8775/mcp
+Health:        http://127.0.0.1:8775/health
+Editor bridge: 127.0.0.1:9877
+```
+
+See [docs/INSTALLER.md](docs/INSTALLER.md) for the complete current setup flow.
 
 ---
 
