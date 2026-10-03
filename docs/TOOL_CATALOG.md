@@ -419,6 +419,14 @@ Creates TileMapLayer using an existing project-local TileSet or a new empty Tile
 
 Permission: standard/write.
 
+### `tileset_atlas_source_add`
+
+Adds a TileSetAtlasSource to the TileSet used by a TileMapLayer or legacy TileMap. The texture must be project-local, region size is explicit, and one call may create up to 256 validated atlas coordinates.
+
+The operation is undoable. When the TileSet is an external resource, add/remove operations save that resource after the editor action.
+
+Permission: standard/write.
+
 ### `tilemap_inspect`
 
 Inspects either TileMapLayer or legacy TileMap and returns a bounded list of used cells, atlas identifiers and used bounds.
