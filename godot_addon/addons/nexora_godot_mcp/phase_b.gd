@@ -726,7 +726,7 @@ func _filesystem_reimport(params: Dictionary) -> Dictionary:
 	return {
 		"reimported": Array(paths),
 		"count": paths.size(),
-		"is_importing": filesystem.is_importing(),
+		"is_importing": _filesystem_is_importing(filesystem),
 	}
 
 
