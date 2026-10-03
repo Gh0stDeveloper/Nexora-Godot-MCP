@@ -4,11 +4,13 @@ extends EditorPlugin
 const BridgeServer = preload("res://addons/nexora_godot_mcp/bridge_server.gd")
 const PhaseB = preload("res://addons/nexora_godot_mcp/phase_b.gd")
 const PhaseC = preload("res://addons/nexora_godot_mcp/phase_c.gd")
+const PhaseD = preload("res://addons/nexora_godot_mcp/phase_d.gd")
 const CONFIG_PATH := "res://.nexora-godot/bridge.json"
 
 var _bridge = BridgeServer.new()
 var _phase_b
 var _phase_c
+var _phase_d
 var _dock: VBoxContainer
 var _status_label: Label
 var _project_label: Label
@@ -19,6 +21,7 @@ var _bridge_config: Dictionary = {}
 func _enter_tree() -> void:
 	_phase_b = PhaseB.new(self)
 	_phase_c = PhaseC.new(self)
+	_phase_d = PhaseD.new(self)
 	_build_dock()
 	_bridge_config = _load_bridge_config()
 	if bool(_bridge_config.get("auto_start", true)):
@@ -148,6 +151,11 @@ func execute_operation(operation: String, params: Dictionary) -> Dictionary:
 		var phase_c_result: Dictionary = _phase_c.execute(operation, params)
 		if not phase_c_result.has("__nexora_unhandled"):
 			return phase_c_result
+
+	if _phase_d != null:
+		var phase_d_result: Dictionary = _phase_d.execute(operation, params)
+		if not phase_d_result.has("__nexora_unhandled"):
+			return phase_d_result
 
 	return _failure("unsupported_operation: %s" % operation)
 
