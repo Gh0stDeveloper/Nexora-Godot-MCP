@@ -337,10 +337,10 @@ async def scene_create(
     root_type: str,
     name: str,
     path: str,
-    replace_current: bool = False,
-    confirm_discard: bool = False,
+    open_after_create: bool = True,
+    overwrite: bool = False,
 ) -> dict[str, Any]:
-    """Create a .tscn scene, optionally replacing the active editor scene with explicit discard confirmation."""
+    """Create a PackedScene resource without discarding the currently edited scene."""
     resource_path = _resource_path(path)
     if not resource_path.lower().endswith(".tscn"):
         raise ValueError("scene_create path must end in .tscn")
@@ -350,8 +350,8 @@ async def scene_create(
             "root_type": root_type,
             "name": name,
             "path": resource_path,
-            "replace_current": replace_current,
-            "confirm_discard": confirm_discard,
+            "open_after_create": open_after_create,
+            "overwrite": overwrite,
         },
         mutating=True,
     )
