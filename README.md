@@ -115,7 +115,7 @@ Current MCP tools include:
 - Control/Container creation, anchors/offsets, themes and text editing;
 - HUD and menu scaffolds;
 - Sprite2D and AnimatedSprite2D authoring;
-- TileMapLayer creation, TileMap/TileMapLayer inspection and undoable cell editing;
+- TileMapLayer creation, TileSet atlas-source authoring, TileMap/TileMapLayer inspection and undoable cell editing;
 - Camera2D and structured 2D collision workflows;
 - managed project runs with explicit `run_id`, status, logs and stop;
 - export preset discovery;
