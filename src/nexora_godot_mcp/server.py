@@ -1433,12 +1433,18 @@ async def collision2d_body_create(
     name: str,
     shape: dict[str, Any],
     position: list[float] | None = None,
+    collision_layer: int = 1,
+    collision_mask: int = 1,
+    monitoring: bool = True,
+    monitorable: bool = True,
 ) -> dict[str, Any]:
     """Create a supported CollisionObject2D body/area with a child CollisionShape2D."""
     if position is not None and len(position) != 2:
         raise ValueError("position must contain exactly 2 numbers")
     if not shape:
         raise ValueError("shape cannot be empty")
+    if collision_layer < 0 or collision_mask < 0:
+        raise ValueError("collision_layer and collision_mask must be non-negative bitmasks")
     return await _call_bridge(
         "collision2d.body_create",
         {
@@ -1447,6 +1453,10 @@ async def collision2d_body_create(
             "name": name,
             "shape": shape,
             "position": position,
+            "collision_layer": collision_layer,
+            "collision_mask": collision_mask,
+            "monitoring": monitoring,
+            "monitorable": monitorable,
         },
         mutating=True,
     )
