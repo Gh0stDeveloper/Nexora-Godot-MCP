@@ -4,7 +4,7 @@ The roadmap is organized by capability phases. Features are only marked complete
 
 ## Phase A — Foundation
 
-Status: **implemented on the Phase A feature branch**
+Status: **complete in main**
 
 - Python package and MCP server;
 - Streamable HTTP gateway;
@@ -37,14 +37,22 @@ Initial MCP tools:
 
 ## Phase B — Scene and node production
 
-- undo/redo integration;
-- scene lifecycle improvements;
-- instantiate/duplicate scenes;
-- rename/reparent nodes;
-- 2D/3D transform tools;
-- owner repair;
-- resource inspection;
-- filesystem rescan/reimport.
+Status: **implemented**
+
+- editor Undo/Redo integration for node creation, deletion, rename, reparent, property changes and transforms;
+- safer scene lifecycle inspection, reload and close flows;
+- scene creation with explicit replacement/discard gates;
+- scene duplication;
+- PackedScene instancing;
+- scene dependency inspection;
+- node rename/reparent;
+- 2D local/global transform tools;
+- 3D local/global transform tools;
+- owner repair for generated scene subtrees;
+- Resource inspection with bounded stored-property serialization;
+- editor filesystem status;
+- filesystem rescan;
+- bounded resource reimport.
 
 ## Phase C — Code, signals and input
 
