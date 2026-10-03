@@ -85,6 +85,7 @@ Status: **implemented**
 - Sprite2D creation with project-local textures and sprite-sheet frames;
 - AnimatedSprite2D + SpriteFrames creation with bounded animation/frame lists;
 - TileMapLayer creation with existing or empty TileSet resources;
+- TileSetAtlasSource creation from project-local textures with bounded atlas-tile selection;
 - TileMapLayer and legacy TileMap inspection;
 - undoable TileMap cell editing with explicit erase confirmation;
 - Camera2D creation with zoom, smoothing and limits;
