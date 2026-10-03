@@ -153,3 +153,44 @@ input_actions_list
 ```
 
 Input actions and bindings are persisted to the Godot project rather than existing only for the current editor process.
+
+
+## Build a HUD and menu
+
+```text
+scene_snapshot
+ ↓
+ui_create_hud
+ ↓
+ui_create_menu
+ ↓
+ui_set_layout
+ ↓
+ui_theme_apply
+ ↓
+signal_connect
+ ↓
+scene_save
+```
+
+Phase D creates the visual hierarchy while Phase C signal tools connect menu buttons to gameplay methods.
+
+## Build a 2D gameplay scene
+
+```text
+tilemap_layer_create
+ ↓
+tilemap_set_cells
+ ↓
+sprite2d_create / animated_sprite2d_create
+ ↓
+collision2d_body_create
+ ↓
+camera2d_create
+ ↓
+scene_save
+ ↓
+project_validate
+```
+
+Tile erasure requires explicit confirmation. Texture and TileSet resources remain confined to the configured Godot project.
