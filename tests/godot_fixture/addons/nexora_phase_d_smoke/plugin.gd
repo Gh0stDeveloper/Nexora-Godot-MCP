@@ -194,6 +194,28 @@ func _run_smoke() -> void:
 		print("NEXORA_PHASE_D_SMOKE_FAIL tile inspect count: ", inspected)
 		return
 
+	var erase_denied: Dictionary = phase_d.execute(
+		"tilemap.set_cells",
+		{
+			"node_path": "Ground",
+			"cells": [{"coords": [0, 0], "source_id": -1}],
+		}
+	)
+	if not erase_denied.has("__nexora_error"):
+		print("NEXORA_PHASE_D_SMOKE_FAIL unconfirmed tile erase was allowed")
+		return
+
+	var erased: Dictionary = phase_d.execute(
+		"tilemap.set_cells",
+		{
+			"node_path": "Ground",
+			"confirm_erase": true,
+			"cells": [{"coords": [0, 0], "source_id": -1}],
+		}
+	)
+	if _failed("confirmed tile erase", erased):
+		return
+
 	var camera: Dictionary = phase_d.execute(
 		"camera2d.create",
 		{
