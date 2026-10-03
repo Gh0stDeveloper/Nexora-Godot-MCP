@@ -1194,7 +1194,7 @@ async def batch_execute(
 
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def nexora_capabilities() -> dict[str, Any]:
-    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-B surface."""
+    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-C surface."""
     return {
         "name": "Nexora Godot MCP",
         "version": "0.3.0",
