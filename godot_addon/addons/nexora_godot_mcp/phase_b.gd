@@ -56,15 +56,13 @@ func _scene_open_scenes() -> Dictionary:
 	var open_scenes: Array[String] = []
 	for path in EditorInterface.get_open_scenes():
 		open_scenes.append(String(path))
-	var unsaved_scenes: Array[String] = []
-	for path in EditorInterface.get_unsaved_scenes():
-		unsaved_scenes.append(String(path))
 	var root := EditorInterface.get_edited_scene_root()
 	return {
 		"open_scenes": open_scenes,
-		"unsaved_scenes": unsaved_scenes,
 		"active_scene": root.scene_file_path if root else "",
 		"active_scene_name": root.name if root else "",
+		"unsaved_state_available": false,
+		"destructive_scene_actions_require_confirmation": true,
 	}
 
 
@@ -75,10 +73,10 @@ func _scene_reload(confirm_discard: bool) -> Dictionary:
 	var path := root.scene_file_path
 	if path.is_empty():
 		return _failure("active scene has never been saved")
-	if _active_scene_is_unsaved(root) and not confirm_discard:
-		return _failure("active scene has unsaved changes; confirm_discard=true is required")
+	if not confirm_discard:
+		return _failure("reload may discard editor changes; confirm_discard=true is required")
 	EditorInterface.reload_scene_from_path(path)
-	return {"path": path, "reloaded": true}
+	return {"path": path, "reloaded": true, "confirmed_discard": true}
 
 
 func _scene_close(confirm_discard: bool) -> Dictionary:
@@ -86,12 +84,12 @@ func _scene_close(confirm_discard: bool) -> Dictionary:
 	if root == null:
 		return _failure("no edited scene")
 	var path := root.scene_file_path
-	if _active_scene_is_unsaved(root) and not confirm_discard:
-		return _failure("active scene has unsaved changes; confirm_discard=true is required")
+	if not confirm_discard:
+		return _failure("closing a scene may discard editor changes; confirm_discard=true is required")
 	var error := EditorInterface.close_scene()
 	if error != OK:
 		return _failure("close_scene failed with error %d" % error)
-	return {"path": path, "closed": true}
+	return {"path": path, "closed": true, "confirmed_discard": true}
 
 
 func _scene_create(params: Dictionary) -> Dictionary:
@@ -730,15 +728,6 @@ func _filesystem_reimport(params: Dictionary) -> Dictionary:
 		"count": paths.size(),
 		"is_importing": filesystem.is_importing(),
 	}
-
-
-func _active_scene_is_unsaved(root: Node) -> bool:
-	if root.scene_file_path.is_empty():
-		return true
-	for path_variant in EditorInterface.get_unsaved_scenes():
-		if String(path_variant) == root.scene_file_path:
-			return true
-	return false
 
 
 func _prepare_property_changes(node: Node, raw_properties) -> Dictionary:
