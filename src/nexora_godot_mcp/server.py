@@ -833,7 +833,15 @@ async def batch_execute(
         raise ValueError("steps cannot be empty")
     if len(steps) > 50:
         raise ValueError("A batch may contain at most 50 steps")
-    forbidden = {"batch.execute", "editor_script.execute"}
+    forbidden = {
+        "batch.execute",
+        "editor_script.execute",
+        "node.delete",
+        "scene.close",
+        "scene.reload",
+        "scene.create",
+        "scene.duplicate",
+    }
     for step in steps:
         operation = str(step.get("operation", ""))
         if operation in forbidden:
@@ -847,7 +855,7 @@ async def batch_execute(
 
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def nexora_capabilities() -> dict[str, Any]:
-    """Describe the dedicated Godot MCP scope, permission mode and current Phase A surface."""
+    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-B surface."""
     return {
         "name": "Nexora Godot MCP",
         "version": "0.2.0",
