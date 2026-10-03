@@ -451,6 +451,8 @@ Permission: standard/write.
 
 Creates a StaticBody2D, CharacterBody2D, RigidBody2D or Area2D together with a child CollisionShape2D.
 
+Collision layer/mask bitfields are configurable, and Area2D workflows can configure monitoring/monitorable state.
+
 Permission: standard/write.
 
 ## Runtime
