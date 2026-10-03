@@ -77,19 +77,19 @@ Permission: standard/write.
 
 ### `scene_open_scenes`
 
-Lists currently open and unsaved scenes and identifies the active scene.
+Lists currently open scenes and identifies the active scene. Godot 4.6 does not expose a stable unsaved-scene list through `EditorInterface`, so destructive scene actions use mandatory confirmation instead.
 
 Permission: read.
 
 ### `scene_reload`
 
-Reloads the active scene from disk. Unsaved changes require `confirm_discard=true`.
+Reloads the active scene from disk. `confirm_discard=true` is always required because reloading can discard editor changes.
 
 Permission: destructive/write.
 
 ### `scene_close`
 
-Closes the active scene. Unsaved changes require `confirm_discard=true`.
+Closes the active scene. `confirm_discard=true` is always required because Godot's close operation discards pending changes.
 
 Permission: destructive/write.
 
