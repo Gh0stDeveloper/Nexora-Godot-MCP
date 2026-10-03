@@ -137,6 +137,32 @@ class GodotCliRunner:
             ],
         )
 
+    def _validated_script_path(self, script_path: Path) -> Path:
+        resolved = script_path.expanduser().resolve()
+        try:
+            resolved.relative_to(self.project_root)
+        except ValueError as exc:
+            raise GodotCliError("Script path must stay inside the configured project") from exc
+        if resolved.suffix.lower() != ".gd":
+            raise GodotCliError("Structured script checking currently supports GDScript (.gd)")
+        if not resolved.is_file():
+            raise GodotCliError(f"Script not found: {resolved}")
+        return resolved
+
+    async def check_script(self, script_path: Path) -> CommandResult:
+        self.ensure_project()
+        script_path = await asyncio.to_thread(self._validated_script_path, script_path)
+        return await self._run_once(
+            [
+                "--headless",
+                "--path",
+                str(self.project_root),
+                "--check-only",
+                "--script",
+                str(script_path),
+            ],
+        )
+
     @staticmethod
     async def _collect(
         stream: asyncio.StreamReader | None,

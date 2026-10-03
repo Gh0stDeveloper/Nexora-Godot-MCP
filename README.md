@@ -92,7 +92,7 @@ See [docs/TOOL_CATALOG.md](docs/TOOL_CATALOG.md) for the proposed MCP surface.
 
 ## Current implementation
 
-The Phase A foundation and Phase B scene/node production layer are implemented, establishing a real editor workflow rather than only documenting a future design.
+The Phase A foundation, Phase B scene/node production layer and Phase C code/signals/input layer are implemented, establishing a real editor workflow rather than only documenting a future design.
 
 Current MCP tools include:
 
@@ -105,7 +105,13 @@ Current MCP tools include:
 - scene owner repair for generated node subtrees;
 - bounded Resource inspection;
 - editor filesystem status, scan and asset reimport;
-- GDScript/C# read/create/revision-aware replacement;
+- GDScript/C# read/create/revision-aware replacement and exact-match patching;
+- structured GDScript diagnostics and script symbol inspection;
+- undoable script attach/detach;
+- signal discovery, connection inspection and undoable connect/disconnect;
+- persistent Input Map action/event management;
+- ProjectSettings read/set/clear with reserved namespaces protected;
+- autoload singleton list/add/remove;
 - managed project runs with explicit `run_id`, status, logs and stop;
 - export preset discovery;
 - debug, release and PCK/ZIP exports;

@@ -15,6 +15,7 @@ godot_addon/
         ├── plugin.cfg
         ├── plugin.gd
         ├── phase_b.gd
+        ├── phase_c.gd
         └── bridge_server.gd
 ```
 
@@ -155,13 +156,11 @@ Generic property editing intentionally blocks sensitive fields that should recei
 
 ## Future plugin work
 
-- script attach/detach;
-- signal tools;
-- Input Map and project settings;
+- structured UI builders;
+- 2D authoring helpers;
 - debugger integration;
 - screenshot capture;
-- animation/resource authoring operations;
-- structured UI builders.
+- animation/resource authoring operations.
 
 
 ## Undo/Redo integration
@@ -196,3 +195,21 @@ Filesystem refresh/reimport uses `EditorInterface.get_resource_filesystem()`. Re
 Godot 4.6 exposes open-scene information but does not provide a stable `EditorInterface` API for listing every unsaved scene. Because `close_scene()` discards pending changes, Nexora Godot MCP does not guess.
 
 `scene_close` and `scene_reload` therefore require `confirm_discard=true` every time. This conservative gate protects manual editor work even when the MCP cannot determine dirty-tab state.
+
+
+## Phase C production layer
+
+Phase C adds editor operations for:
+
+- Script symbols;
+- Script attach/detach;
+- signal discovery and connection management;
+- Input Map persistence;
+- ProjectSettings access;
+- autoload singletons.
+
+Script attachment and signal connection changes use the editor Undo/Redo history.
+
+Input Map actions are read and written directly through the project's `input/*` entries in `ProjectSettings`. This is intentional: inside an editor plugin, the `InputMap` singleton can represent editor actions rather than the project's bindings. Generic settings tools deliberately reject the `input/`, `autoload/` and `editor_plugins/` namespaces so callers cannot bypass the typed tools.
+
+Autoload operations use the EditorPlugin autoload API and never delete the underlying script/scene when a registration is removed.

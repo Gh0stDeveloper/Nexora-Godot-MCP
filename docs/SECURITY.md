@@ -70,19 +70,24 @@ NEXORA_GODOT_PROJECT_ROOT
 
 Godot bridge scene paths additionally require `res://` and reject traversal components.
 
-Exports are also written beneath the configured project root in Phase A.
+Exports are also written beneath the configured project root.
 
 ## Script safety
 
-Phase A supports:
+The script surface supports:
 
 - reading `.gd` and `.cs`;
 - creating scripts;
-- revision-aware whole-file replacement.
+- revision-aware whole-file replacement;
+- revision-aware exact-match patching;
+- GDScript parser checks;
+- structured Script symbol inspection.
 
-`script_replace` requires the caller to provide the SHA-256 of the version it read. This prevents a stale AI operation from silently overwriting newer human work.
+`script_replace` and `script_patch` require the caller to provide the SHA-256 of the version it read. This prevents stale AI operations from silently overwriting newer human work.
 
-Direct node property editing explicitly blocks sensitive properties such as `script` and `owner`; dedicated tools will handle those concepts.
+`script_patch` rejects ambiguous search blocks and writes the completed result atomically.
+
+Direct node property editing blocks sensitive properties such as `script` and `owner`; dedicated undo-aware tools handle those concepts.
 
 ## CLI safety
 
@@ -160,3 +165,23 @@ If a credential is exposed:
 5. inspect `var/audit.jsonl`;
 6. inspect project source changes;
 7. reconnect only after new credentials are active.
+
+
+## Project settings, Input Map and autoloads
+
+Generic `project_settings_set` and `project_settings_clear` cannot edit:
+
+- `input/`;
+- `autoload/`;
+- `editor_plugins/`;
+- Godot's global script-class registry.
+
+Input actions and autoloads use dedicated typed tools with their own validation.
+
+Deleting an Input Map action/event, clearing project settings and removing an autoload require explicit MCP confirmation at the gateway.
+
+Autoload removal removes only the registration. It never deletes the referenced script or scene.
+
+## Batch safety
+
+Confirmation-gated destructive operations are blocked inside `batch_execute`. This prevents a caller from bypassing a dedicated confirmation parameter by embedding the bridge operation directly inside a batch.

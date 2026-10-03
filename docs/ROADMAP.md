@@ -56,13 +56,20 @@ Status: **implemented**
 
 ## Phase C — Code, signals and input
 
-- revision-aware patch operations;
-- attach/detach scripts;
-- structured script diagnostics;
-- script symbols;
-- signals;
-- Input Map tools;
-- project settings/autoload tools.
+Status: **implemented**
+
+- SHA-256 guarded exact-match script patch operations with atomic file replacement;
+- GDScript parser diagnostics through Godot's `--check-only --script` flow;
+- script symbol inspection from Godot Script resources;
+- undoable script attach/detach;
+- signal listing and connection inspection;
+- undoable persistent signal connect/disconnect;
+- Input Map action list/create/delete/deadzone management;
+- structured key/mouse/joypad event add/remove with project persistence;
+- bounded ProjectSettings read/set/clear;
+- protected Input Map/autoload/editor-plugin namespaces;
+- autoload singleton list/add/remove;
+- Phase C Godot 4.6.3 editor smoke coverage.
 
 ## Phase D — UI and 2D
 

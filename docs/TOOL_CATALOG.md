@@ -1,8 +1,8 @@
 # Tool catalog
 
-This document distinguishes the **implemented Phase A–B surface** from the broader planned catalog.
+This document distinguishes the **implemented Phase A–C surface** from the broader planned catalog.
 
-## Implemented in Phase A–B
+## Implemented in Phase A–C
 
 ### System
 
@@ -221,6 +221,140 @@ The current file SHA-256 must match `expected_sha256`.
 
 Permission: standard/write.
 
+### `script_patch`
+
+Applies up to 100 exact-match patches after verifying the SHA-256 revision that the AI previously read.
+
+By default every patch search must match exactly once. `replace_all=true` can be used only with an explicit/derived match count. The final write is atomic.
+
+Permission: standard/write.
+
+### `script_check`
+
+Runs Godot's GDScript parser using `--check-only --script` and returns structured diagnostics plus raw output.
+
+Current structured checking targets `.gd`. C# source editing is supported, but compiler diagnostics require a Godot .NET/.NET toolchain and are not faked by the standard build.
+
+Permission: read.
+
+### `script_symbols`
+
+Loads a Godot Script resource and returns language, global name, base script, methods, signals and script properties.
+
+Permission: read.
+
+### `script_attach` / `script_detach`
+
+Attach or detach a Script resource on a node with editor Undo/Redo support.
+
+Permission: standard/write.
+
+## Signals
+
+### `signal_list`
+
+Lists signals exposed by a node and optionally their current connections.
+
+Permission: read.
+
+### `signal_connections`
+
+Inspects the connections for one signal.
+
+Permission: read.
+
+### `signal_connect`
+
+Creates an undoable connection to a target method. Persistent editor-scene connections are enabled by default.
+
+Optional flags include deferred, one-shot and reference-counted connections.
+
+Permission: standard/write.
+
+### `signal_disconnect`
+
+Disconnects one matching signal/callable pair while preserving an Undo action.
+
+Permission: standard/write.
+
+## Input Map
+
+### `input_actions_list`
+
+Returns actions, deadzones, persisted state and serialized key/mouse/joypad events.
+
+Permission: read.
+
+### `input_action_create`
+
+Creates and persists a new action.
+
+Permission: standard/write.
+
+### `input_action_set_deadzone`
+
+Changes and persists an existing action deadzone.
+
+Permission: standard/write.
+
+### `input_action_delete`
+
+Deletes an action. `confirm=true` is required.
+
+Permission: destructive/write.
+
+### `input_event_add`
+
+Adds a structured `key`, `mouse_button`, `joypad_button` or `joypad_motion` event and persists the action.
+
+Permission: standard/write.
+
+### `input_event_remove`
+
+Removes an event by index. `confirm=true` is required.
+
+Permission: destructive/write.
+
+## Project settings and autoloads
+
+### `project_settings_read`
+
+Reads explicit settings or a bounded prefix-filtered subset.
+
+Permission: read.
+
+### `project_settings_set`
+
+Sets up to 100 ordinary ProjectSettings values and saves `project.godot`.
+
+The `input/`, `autoload/` and `editor_plugins/` namespaces are reserved for dedicated tools.
+
+Permission: standard/write.
+
+### `project_settings_clear`
+
+Removes ordinary settings. `confirm=true` is required.
+
+Permission: destructive/write.
+
+### `autoload_list`
+
+Lists project autoload singletons.
+
+Permission: read.
+
+### `autoload_add`
+
+Registers an existing project-local `.gd`, `.cs`, `.tscn` or `.scn` as an autoload singleton.
+
+Permission: standard/write.
+
+### `autoload_remove`
+
+Removes the autoload registration without deleting its source resource. `confirm=true` is required.
+
+Permission: destructive/write.
+
 ## Runtime
 
 ### `project_run`
@@ -294,11 +428,7 @@ The following categories are intentionally planned as dedicated structured tools
 ## Project/settings
 
 - `project_create`
-- `project_settings_read`
-- `project_settings_set`
-- `autoload_list`
-- `autoload_add`
-- `autoload_remove`
+- feature-specific typed project-setting helpers
 
 ## Scene composition
 
@@ -322,26 +452,19 @@ The following categories are intentionally planned as dedicated structured tools
 
 ## Scripts
 
-- `script_patch`
-- `script_attach`
-- `script_detach`
-- `script_check`
-- `script_symbols`
+- range-aware patch helpers;
+- C# diagnostics when a verified Godot .NET toolchain is available;
+- code navigation helpers.
 
 ## Signals
 
-- `signal_list`
-- `signal_connections`
-- `signal_connect`
-- `signal_disconnect`
+- signal connection bulk validation;
+- connection repair helpers.
 
 ## Input Map
 
-- `input_actions_list`
-- `input_action_create`
-- `input_action_delete`
-- `input_event_add`
-- `input_event_remove`
+- richer device-specific event types;
+- conflict detection across actions.
 
 ## UI
 
