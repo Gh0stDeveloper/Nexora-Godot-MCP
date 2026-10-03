@@ -49,7 +49,7 @@ The bridge always binds explicitly to:
 127.0.0.1
 ```
 
-Changing the JSON `host` does not make the Phase A bridge listen publicly; the bridge server code fixes its listener to loopback.
+Changing the JSON `host` does not make the bridge listen publicly; the bridge server code fixes its listener to loopback.
 
 ## Protocol
 
@@ -155,14 +155,12 @@ Generic property editing intentionally blocks sensitive fields that should recei
 
 ## Future plugin work
 
-- EditorUndoRedoManager integration;
-- scene instancing;
 - script attach/detach;
 - signal tools;
-- filesystem scan/reimport;
+- Input Map and project settings;
 - debugger integration;
 - screenshot capture;
-- animation/resource operations;
+- animation/resource authoring operations;
 - structured UI builders.
 
 
