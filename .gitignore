@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime
+var/
+*.log
+.nexora-godot/
+
+# Godot
+.godot/
+.import/
+.export/
+*.tmp
+
+# Node / optional web control center
+node_modules/
+.next/
+out/
+coverage/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
