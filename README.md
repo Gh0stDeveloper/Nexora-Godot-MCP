@@ -92,7 +92,7 @@ See [docs/TOOL_CATALOG.md](docs/TOOL_CATALOG.md) for the proposed MCP surface.
 
 ## Current implementation
 
-The Phase A foundation, Phase B scene/node production layer, Phase C code/signals/input layer and Phase D UI/2D production layer are implemented, establishing a real editor workflow rather than only documenting a future design.
+Phases A through F are implemented: foundation, scene/node production, code/signals/input, UI/2D, 3D/gameplay structures, and navigation/animation.
 
 Current MCP tools include:
 
@@ -117,6 +117,11 @@ Current MCP tools include:
 - Sprite2D and AnimatedSprite2D authoring;
 - TileMapLayer creation, TileSet atlas-source authoring, TileMap/TileMapLayer inspection and undoable cell editing;
 - Camera2D and structured 2D collision workflows;
+- MeshInstance3D primitives/resources, Camera3D, Light3D and WorldEnvironment;
+- structured 3D collision bodies/areas and Skeleton3D inspection;
+- NavigationRegion/Agent/Link authoring for 2D and 3D;
+- AnimationPlayer libraries, animations, tracks and keys;
+- AnimationTree state-machine creation, states, transitions and inspection;
 - managed project runs with explicit `run_id`, status, logs and stop;
 - export preset discovery;
 - debug, release and PCK/ZIP exports;
