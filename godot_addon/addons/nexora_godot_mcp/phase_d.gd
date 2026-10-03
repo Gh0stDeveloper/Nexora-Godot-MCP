@@ -63,6 +63,8 @@ func execute(operation: String, params: Dictionary) -> Dictionary:
 			return _tilemap_layer_create(params)
 		"tilemap.inspect":
 			return _tilemap_inspect(params)
+		"tileset.atlas_source_add":
+			return _tileset_atlas_source_add(params)
 		"tilemap.set_cells":
 			return _tilemap_set_cells(params)
 		"camera2d.create":
@@ -709,6 +711,92 @@ func _tilemap_inspect(params: Dictionary) -> Dictionary:
 	}
 
 
+func _tileset_atlas_source_add(params: Dictionary) -> Dictionary:
+	var context := _scene_context()
+	if context.has("__nexora_error"):
+		return context
+	var root: Node = context["root"]
+	var node := _find_node(root, String(params.get("node_path", "")))
+	if not (node is TileMapLayer or node is TileMap):
+		return _failure("node must be TileMapLayer or legacy TileMap")
+
+	var tile_set: TileSet = node.tile_set
+	if tile_set == null:
+		return _failure("TileMap node has no TileSet")
+
+	var texture_path := String(params.get("texture_path", ""))
+	var texture_result := _load_texture(texture_path)
+	if texture_result.has("__nexora_error") or not texture_result.has("texture"):
+		return _failure("texture_path must be an existing project-local Texture2D")
+	var texture: Texture2D = texture_result["texture"]
+
+	var region_result := _vector2i_from_required(
+		params.get("texture_region_size"),
+		"texture_region_size"
+	)
+	if region_result.has("__nexora_error"):
+		return region_result
+	var region_size: Vector2i = region_result["value"]
+	if region_size.x <= 0 or region_size.y <= 0:
+		return _failure("texture_region_size components must be positive")
+	if region_size.x > texture.get_width() or region_size.y > texture.get_height():
+		return _failure("texture_region_size cannot exceed the texture dimensions")
+
+	var raw_tiles = params.get("tiles", [])
+	if typeof(raw_tiles) != TYPE_ARRAY or raw_tiles.is_empty() or raw_tiles.size() > 256:
+		return _failure("tiles must contain between 1 and 256 atlas coordinates")
+
+	var max_x := texture.get_width() / region_size.x
+	var max_y := texture.get_height() / region_size.y
+	var coords_list: Array[Vector2i] = []
+	var seen := {}
+	for tile_variant in raw_tiles:
+		var coords_result := _vector2i_from_required(tile_variant, "tile atlas coordinate")
+		if coords_result.has("__nexora_error"):
+			return coords_result
+		var coords: Vector2i = coords_result["value"]
+		if coords.x < 0 or coords.y < 0 or coords.x >= max_x or coords.y >= max_y:
+			return _failure("atlas coordinate is outside the texture grid: %s" % coords)
+		var key := "%d,%d" % [coords.x, coords.y]
+		if seen.has(key):
+			return _failure("duplicate atlas coordinate: %s" % coords)
+		seen[key] = true
+		coords_list.append(coords)
+
+	var requested_source_id := int(params.get("source_id", -1))
+	var source_id := requested_source_id
+	if source_id < 0:
+		source_id = 0
+		while tile_set.has_source(source_id):
+			source_id += 1
+	elif tile_set.has_source(source_id):
+		return _failure("TileSet already contains source_id %d" % source_id)
+
+	var atlas := TileSetAtlasSource.new()
+	atlas.texture = texture
+	atlas.texture_region_size = region_size
+	for coords in coords_list:
+		atlas.create_tile(coords)
+
+	var undo_redo := _plugin.get_undo_redo()
+	undo_redo.create_action("Nexora: Add TileSet Atlas Source", UndoRedo.MERGE_DISABLE, root)
+	undo_redo.add_do_method(self, "_tileset_add_source", tile_set, atlas, source_id)
+	undo_redo.add_undo_method(self, "_tileset_remove_source", tile_set, source_id)
+	undo_redo.add_do_reference(atlas)
+	undo_redo.commit_action()
+
+	return {
+		"path": "." if node == root else str(root.get_path_to(node)),
+		"source_id": source_id,
+		"texture_path": texture_path,
+		"texture_region_size": [region_size.x, region_size.y],
+		"tiles": raw_tiles,
+		"tile_count": coords_list.size(),
+		"tile_set_path": tile_set.resource_path,
+		"undoable": true,
+	}
+
+
 func _tilemap_set_cells(params: Dictionary) -> Dictionary:
 	var context := _scene_context()
 	if context.has("__nexora_error"):
@@ -1294,6 +1382,27 @@ func _load_texture(path: String) -> Dictionary:
 	if not loaded is Texture2D:
 		return _failure("resource could not be loaded as Texture2D")
 	return {"texture": loaded}
+
+
+func _tileset_add_source(
+	tile_set: TileSet,
+	atlas: TileSetAtlasSource,
+	source_id: int
+) -> void:
+	if not tile_set.has_source(source_id):
+		tile_set.add_source(atlas, source_id)
+	_save_external_resource_if_needed(tile_set)
+
+
+func _tileset_remove_source(tile_set: TileSet, source_id: int) -> void:
+	if tile_set.has_source(source_id):
+		tile_set.remove_source(source_id)
+	_save_external_resource_if_needed(tile_set)
+
+
+func _save_external_resource_if_needed(resource: Resource) -> void:
+	if not resource.resource_path.is_empty():
+		ResourceSaver.save(resource)
 
 
 func _tile_cell_to_dict(node: Node, layer_index: int, coords: Vector2i) -> Dictionary:
