@@ -1336,6 +1336,35 @@ async def tilemap_inspect(
 
 
 @mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def tileset_atlas_source_add(
+    node_path: str,
+    texture_path: str,
+    texture_region_size: list[int],
+    tiles: list[list[int]],
+    source_id: int = -1,
+) -> dict[str, Any]:
+    """Add a TileSetAtlasSource and selected atlas tiles to a TileMap node's TileSet."""
+    if len(texture_region_size) != 2:
+        raise ValueError("texture_region_size must contain exactly 2 integers")
+    if not 1 <= len(tiles) <= 256:
+        raise ValueError("tiles must contain between 1 and 256 atlas coordinates")
+    if any(len(coords) != 2 for coords in tiles):
+        raise ValueError("each tile atlas coordinate must contain exactly 2 integers")
+    resource_path = _resource_path(texture_path, must_exist=True)
+    return await _call_bridge(
+        "tileset.atlas_source_add",
+        {
+            "node_path": node_path,
+            "texture_path": resource_path,
+            "texture_region_size": texture_region_size,
+            "tiles": tiles,
+            "source_id": source_id,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
 async def tilemap_set_cells(
     node_path: str,
     cells: list[dict[str, Any]],
