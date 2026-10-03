@@ -300,10 +300,8 @@ func _collision3d_body_create(params: Dictionary) -> Dictionary:
 	collision.name = "CollisionShape3D"
 	collision.shape = shape_result["shape"]
 	body.add_child(collision)
-	collision.owner = body
 
 	_commit_add_node(root, parent, body, "Nexora: Create CollisionObject3D")
-	collision.owner = root
 
 	return {
 		"path": str(root.get_path_to(body)),
