@@ -234,3 +234,20 @@ UI/node creation and TileMap changes participate in the editor Undo/Redo history
 Theme paths and texture paths remain project-local resources. AnimatedSprite2D creation is bounded to 32 animations and 256 frames per call.
 
 TileMap cell erasure is never implicit: a cell update with `source_id=-1` requires an explicit `confirm_erase=true` request at the MCP gateway and is checked again by the editor bridge.
+
+
+## Phase E — 3D/gameplay production layer
+
+Phase E adds typed editor operations for MeshInstance3D, Camera3D, Light3D, WorldEnvironment, CollisionShape3D, supported 3D physics bodies/areas and Skeleton3D inspection.
+
+The 3D layer configures Godot engine structures only. It does not attempt to replace Nexora Forge MCP for modeling or mesh authoring.
+
+Created 3D nodes participate in the editor Undo/Redo history.
+
+## Phase F — navigation and animation layer
+
+Phase F adds NavigationRegion/Agent/Link creation for both 2D and 3D plus navigation inspection.
+
+Animation authoring includes AnimationPlayer, AnimationLibrary/Animation resources, typed tracks, key insertion, AnimationTree backed by AnimationNodeStateMachine, state creation, transitions and inspection.
+
+These editor mutations are designed to remain undoable where Godot's resource APIs permit it.
