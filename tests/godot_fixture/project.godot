@@ -1,0 +1,13 @@
+; Nexora Godot MCP CI fixture
+config_version=5
+
+[application]
+config/name="Nexora Godot MCP Fixture"
+run/main_scene="res://main.tscn"
+
+[editor_plugins]
+enabled=PackedStringArray("res://addons/nexora_godot_mcp/plugin.cfg")
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
