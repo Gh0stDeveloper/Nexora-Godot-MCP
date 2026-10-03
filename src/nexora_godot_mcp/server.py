@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import uuid
@@ -20,6 +21,7 @@ from .auth import IntrospectionTokenVerifier
 from .bridge import GodotBridgeClient, GodotBridgeError
 from .config import get_settings
 from .runner import GodotCliError, GodotCliRunner
+from .script_ops import ScriptPatchError, apply_revision_patch, parse_godot_diagnostics
 from .security import BearerTokenMiddleware
 
 logger = logging.getLogger("nexora_godot_mcp")
@@ -52,7 +54,7 @@ def _create_mcp() -> Any:
             "Nexora Godot MCP",
             title="Nexora Godot MCP",
             description="Secure local-first AI-native Godot development gateway",
-            version="0.2.0",
+            version="0.3.0",
             instructions=instructions,
             token_verifier=IntrospectionTokenVerifier(settings),
             auth=AuthSettings(
@@ -66,7 +68,7 @@ def _create_mcp() -> Any:
         "Nexora Godot MCP",
         title="Nexora Godot MCP",
         description="Secure local-first AI-native Godot development gateway",
-        version="0.2.0",
+        version="0.3.0",
         instructions=instructions,
     )
 
@@ -210,7 +212,7 @@ async def health(_: Request) -> JSONResponse:
     return JSONResponse(
         {
             "service": "Nexora Godot MCP",
-            "version": "0.2.0",
+            "version": "0.3.0",
             "status": "ok",
             "auth_mode": settings.auth_mode,
             "permission_profile": settings.permission_profile,
@@ -236,7 +238,7 @@ async def godot_status() -> dict[str, Any]:
         version = None
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "godot_version": version,
         "project_root": str(settings.resolved_project_root),
         "bridge": bridge_result,
@@ -695,6 +697,339 @@ async def script_replace(
 
 
 
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def script_patch(
+    path: str,
+    expected_sha256: str,
+    patches: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Apply bounded exact-match patches only when the current script revision matches expected_sha256."""
+    _assert_permission(mutating=True)
+    target = _project_file(path, must_exist=True)
+    if target.suffix.lower() not in {".gd", ".cs"}:
+        raise ValueError("script_patch supports .gd and .cs files")
+    try:
+        result = await asyncio.to_thread(
+            apply_revision_patch,
+            target,
+            expected_sha256=expected_sha256,
+            patches=patches,
+        )
+    except ScriptPatchError as exc:
+        raise RuntimeError(str(exc)) from exc
+    request_id = _audit_cli(
+        operation="script.patch",
+        params={
+            "path": _resource_path(path, must_exist=True),
+            "expected_sha256": expected_sha256,
+            "patch_count": len(patches),
+        },
+        status="ok",
+    )
+    return {
+        "request_id": request_id,
+        "path": _resource_path(path, must_exist=True),
+        **result,
+    }
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def script_check(path: str) -> dict[str, Any]:
+    """Run Godot's GDScript parser and return structured diagnostics for one .gd script."""
+    _assert_permission()
+    target = _project_file(path, must_exist=True)
+    if target.suffix.lower() != ".gd":
+        raise ValueError("script_check currently supports GDScript (.gd)")
+    result = await runner.check_script(target)
+    diagnostics = parse_godot_diagnostics(result.stdout, result.stderr)
+    valid = result.returncode == 0 and not any(
+        item.get("severity") == "error" for item in diagnostics
+    )
+    request_id = _audit_cli(
+        operation="script.check",
+        params={"path": _resource_path(path, must_exist=True)},
+        status="ok" if valid else "error",
+        detail=result.stderr[-500:] if not valid else None,
+    )
+    return {
+        "request_id": request_id,
+        "path": _resource_path(path, must_exist=True),
+        "valid": valid,
+        "returncode": result.returncode,
+        "diagnostics": diagnostics,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def script_symbols(path: str) -> dict[str, Any]:
+    """Inspect methods, signals and properties exposed by a Godot Script resource."""
+    resource_path = _resource_path(path, must_exist=True)
+    if not resource_path.lower().endswith((".gd", ".cs")):
+        raise ValueError("script_symbols supports .gd and .cs files")
+    return await _call_bridge("script.symbols", {"path": resource_path})
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def script_attach(node_path: str, script_path: str) -> dict[str, Any]:
+    """Attach a project-local Script resource to a node with editor Undo/Redo support."""
+    resource_path = _resource_path(script_path, must_exist=True)
+    if not resource_path.lower().endswith((".gd", ".cs")):
+        raise ValueError("script_path must be a .gd or .cs file")
+    return await _call_bridge(
+        "script.attach",
+        {"node_path": node_path, "script_path": resource_path},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def script_detach(node_path: str) -> dict[str, Any]:
+    """Detach the current Script from a node with editor Undo/Redo support."""
+    return await _call_bridge(
+        "script.detach",
+        {"node_path": node_path},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def signal_list(node_path: str, include_connections: bool = True) -> dict[str, Any]:
+    """List signals exposed by a node and optionally their current connections."""
+    return await _call_bridge(
+        "signal.list",
+        {"node_path": node_path, "include_connections": include_connections},
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def signal_connections(node_path: str, signal_name: str) -> dict[str, Any]:
+    """Inspect connections for one signal on a node."""
+    if not signal_name.strip():
+        raise ValueError("signal_name cannot be empty")
+    return await _call_bridge(
+        "signal.connections",
+        {"node_path": node_path, "signal_name": signal_name},
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def signal_connect(
+    source_path: str,
+    signal_name: str,
+    target_path: str,
+    method: str,
+    persist: bool = True,
+    deferred: bool = False,
+    one_shot: bool = False,
+    reference_counted: bool = False,
+) -> dict[str, Any]:
+    """Connect a Godot signal to a target method with editor Undo/Redo support."""
+    if not signal_name.strip() or not method.strip():
+        raise ValueError("signal_name and method cannot be empty")
+    return await _call_bridge(
+        "signal.connect",
+        {
+            "source_path": source_path,
+            "signal_name": signal_name,
+            "target_path": target_path,
+            "method": method,
+            "persist": persist,
+            "deferred": deferred,
+            "one_shot": one_shot,
+            "reference_counted": reference_counted,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def signal_disconnect(
+    source_path: str,
+    signal_name: str,
+    target_path: str,
+    method: str,
+) -> dict[str, Any]:
+    """Disconnect a Godot signal while keeping the change undoable in the editor."""
+    if not signal_name.strip() or not method.strip():
+        raise ValueError("signal_name and method cannot be empty")
+    return await _call_bridge(
+        "signal.disconnect",
+        {
+            "source_path": source_path,
+            "signal_name": signal_name,
+            "target_path": target_path,
+            "method": method,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def input_actions_list() -> dict[str, Any]:
+    """List Godot Input Map actions, deadzones and serialized input events."""
+    return await _call_bridge("input.actions_list")
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def input_action_create(
+    name: str,
+    deadzone: float = 0.5,
+) -> dict[str, Any]:
+    """Create and persist a new Godot Input Map action."""
+    if not name.strip():
+        raise ValueError("name cannot be empty")
+    if not 0.0 <= deadzone <= 1.0:
+        raise ValueError("deadzone must be between 0 and 1")
+    return await _call_bridge(
+        "input.action_create",
+        {"name": name, "deadzone": deadzone},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def input_action_set_deadzone(name: str, deadzone: float) -> dict[str, Any]:
+    """Change and persist an existing Input Map action deadzone."""
+    if not 0.0 <= deadzone <= 1.0:
+        raise ValueError("deadzone must be between 0 and 1")
+    return await _call_bridge(
+        "input.action_set_deadzone",
+        {"name": name, "deadzone": deadzone},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
+async def input_action_delete(name: str, confirm: bool = False) -> dict[str, Any]:
+    """Delete an Input Map action. confirm=true is required."""
+    if not confirm:
+        raise ValueError("confirm=true is required")
+    return await _call_bridge(
+        "input.action_delete",
+        {"name": name},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def input_event_add(action: str, event: dict[str, Any]) -> dict[str, Any]:
+    """Add and persist a structured key, mouse or joypad event to an Input Map action."""
+    if not action.strip():
+        raise ValueError("action cannot be empty")
+    if not event:
+        raise ValueError("event cannot be empty")
+    return await _call_bridge(
+        "input.event_add",
+        {"action": action, "event": event},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
+async def input_event_remove(
+    action: str,
+    index: int,
+    confirm: bool = False,
+) -> dict[str, Any]:
+    """Remove one Input Map event by index. confirm=true is required."""
+    if index < 0:
+        raise ValueError("index must be >= 0")
+    if not confirm:
+        raise ValueError("confirm=true is required")
+    return await _call_bridge(
+        "input.event_remove",
+        {"action": action, "index": index},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def project_settings_read(
+    keys: list[str] | None = None,
+    prefix: str | None = None,
+    max_results: int = 200,
+) -> dict[str, Any]:
+    """Read selected project settings or a bounded prefix-filtered subset."""
+    if not 1 <= max_results <= 1000:
+        raise ValueError("max_results must be between 1 and 1000")
+    if keys is not None and len(keys) > 200:
+        raise ValueError("At most 200 explicit setting keys may be read")
+    return await _call_bridge(
+        "project.settings_read",
+        {"keys": keys or [], "prefix": prefix or "", "max_results": max_results},
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def project_settings_set(values: dict[str, Any]) -> dict[str, Any]:
+    """Set and persist ordinary Godot ProjectSettings values outside Input Map and autoload namespaces."""
+    if not values:
+        raise ValueError("values cannot be empty")
+    if len(values) > 100:
+        raise ValueError("At most 100 project settings may be changed per call")
+    if any(value is None for value in values.values()):
+        raise ValueError("Use project_settings_clear to remove settings")
+    return await _call_bridge(
+        "project.settings_set",
+        {"values": values},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
+async def project_settings_clear(
+    keys: list[str],
+    confirm: bool = False,
+) -> dict[str, Any]:
+    """Remove persisted project settings. confirm=true is required."""
+    if not keys or len(keys) > 100:
+        raise ValueError("keys must contain between 1 and 100 settings")
+    if not confirm:
+        raise ValueError("confirm=true is required")
+    return await _call_bridge(
+        "project.settings_clear",
+        {"keys": keys},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def autoload_list() -> dict[str, Any]:
+    """List project autoload singletons."""
+    return await _call_bridge("autoload.list")
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def autoload_add(name: str, path: str) -> dict[str, Any]:
+    """Add and persist a project-local autoload singleton."""
+    if not name.strip():
+        raise ValueError("name cannot be empty")
+    resource_path = _resource_path(path, must_exist=True)
+    if not resource_path.lower().endswith((".gd", ".cs", ".tscn", ".scn")):
+        raise ValueError("autoload path must be a script or scene")
+    return await _call_bridge(
+        "autoload.add",
+        {"name": name, "path": resource_path},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
+async def autoload_remove(name: str, confirm: bool = False) -> dict[str, Any]:
+    """Remove an autoload registration without deleting its source file. confirm=true is required."""
+    if not confirm:
+        raise ValueError("confirm=true is required")
+    return await _call_bridge(
+        "autoload.remove",
+        {"name": name},
+        mutating=True,
+    )
+
+
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def resource_inspect(
     path: str,
@@ -841,6 +1176,10 @@ async def batch_execute(
         "scene.reload",
         "scene.create",
         "scene.duplicate",
+        "input.action_delete",
+        "input.event_remove",
+        "project.settings_clear",
+        "autoload.remove",
     }
     for step in steps:
         operation = str(step.get("operation", ""))
@@ -858,7 +1197,7 @@ async def nexora_capabilities() -> dict[str, Any]:
     """Describe the dedicated Godot MCP scope, permission mode and current Phase A-B surface."""
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "dedicated_application": "Godot Engine",
         "all_in_one": False,
         "provider_agnostic": True,
@@ -874,6 +1213,10 @@ async def nexora_capabilities() -> dict[str, Any]:
             "resources",
             "filesystem",
             "scripts",
+            "signals",
+            "input",
+            "project_settings",
+            "autoloads",
             "runtime",
             "export",
             "batch",
