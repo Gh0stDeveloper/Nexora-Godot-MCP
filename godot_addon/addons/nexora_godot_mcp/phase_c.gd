@@ -66,7 +66,7 @@ func _script_symbols(path: String) -> Dictionary:
 	var base_script := script.get_base_script()
 	return {
 		"path": path,
-		"language": script.get_language().get_name() if script.get_language() else "",
+		"language": "GDScript" if path.to_lower().ends_with(".gd") else "C#",
 		"global_name": String(script.get_global_name()),
 		"base_script": base_script.resource_path if base_script else "",
 		"can_instantiate": script.can_instantiate(),
