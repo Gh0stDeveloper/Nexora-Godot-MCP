@@ -92,14 +92,19 @@ See [docs/TOOL_CATALOG.md](docs/TOOL_CATALOG.md) for the proposed MCP surface.
 
 ## Current implementation
 
-The Phase A foundation is implemented on the development branch and establishes the real execution path instead of only documenting a future design.
+The Phase A foundation and Phase B scene/node production layer are implemented, establishing a real editor workflow rather than only documenting a future design.
 
 Current MCP tools include:
 
 - `godot_status` and `nexora_capabilities`;
 - project inspection, validation and headless import;
-- current-scene snapshot/open/save/create;
-- node creation, property updates and confirmed deletion;
+- scene snapshot/open/save/create, open-scene state, reload and close;
+- scene duplication, dependency inspection and PackedScene instancing;
+- undoable node create/property/delete/rename/reparent operations;
+- undoable Node2D and Node3D local/global transforms;
+- scene owner repair for generated node subtrees;
+- bounded Resource inspection;
+- editor filesystem status, scan and asset reimport;
 - GDScript/C# read/create/revision-aware replacement;
 - managed project runs with explicit `run_id`, status, logs and stop;
 - export preset discovery;
