@@ -95,25 +95,40 @@ Status: **implemented**
 
 ## Phase E — 3D and gameplay structures
 
-- MeshInstance3D;
-- Camera3D;
-- light creation;
-- WorldEnvironment;
-- collisions;
-- physics bodies;
-- areas;
-- Skeleton3D inspection.
+Status: **implemented**
 
-Godot MCP will configure game-engine structures; it will not replace Forge for 3D modeling.
+- MeshInstance3D creation from project-local Mesh resources or supported primitive meshes;
+- Camera3D creation with transform/FOV/near/far/current controls;
+- DirectionalLight3D/OmniLight3D/SpotLight3D creation;
+- WorldEnvironment + Environment resource creation with bounded background/ambient controls;
+- structured CollisionShape3D creation;
+- StaticBody3D/CharacterBody3D/RigidBody3D/Area3D creation with collision layer/mask configuration;
+- structured 3D collision shapes including box, sphere, capsule, cylinder, world boundary and convex polygon;
+- Skeleton3D hierarchy/rest/pose inspection with bounded bone output;
+- editor Undo/Redo for created 3D nodes;
+- Phase E Godot 4.6.3 editor smoke coverage.
+
+Godot MCP configures engine-side 3D/gameplay structures; it does not replace Nexora Forge MCP for 3D modeling.
 
 ## Phase F — Navigation and animation
 
-- NavigationRegion;
-- NavigationAgent;
-- NavigationLink;
-- AnimationPlayer;
-- animation resources/tracks/keys;
-- AnimationTree/state machines.
+Status: **implemented**
+
+- NavigationRegion2D/3D creation with existing or empty navigation resources;
+- NavigationAgent2D/3D creation with path/target distance, radius, speed and avoidance controls;
+- NavigationLink2D/3D creation with endpoints, layers, costs and bidirectional settings;
+- navigation-node inspection;
+- AnimationPlayer creation;
+- AnimationLibrary/Animation creation with length and loop modes;
+- animation library/track inspection;
+- structured animation track creation;
+- undoable animation key insertion/replacement;
+- AnimationTree creation backed by AnimationNodeStateMachine;
+- AnimationNodeAnimation state creation;
+- state-machine transition creation with crossfade/switch/advance controls;
+- AnimationTree state/transition inspection;
+- editor Undo/Redo for navigation/animation authoring operations;
+- Phase F Godot 4.6.3 editor smoke coverage.
 
 ## Phase G — Audio, shaders and materials
 
