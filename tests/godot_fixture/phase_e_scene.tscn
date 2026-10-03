@@ -1,1 +1,5 @@
-[gd_scene format=3]\n\n[node name="PhaseE" type="Node3D"]\n\n[node name="Skeleton3D" type="Skeleton3D" parent="."]\n
+[gd_scene format=3]
+
+[node name="PhaseE" type="Node3D"]
+
+[node name="Skeleton3D" type="Skeleton3D" parent="."]
