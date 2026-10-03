@@ -680,13 +680,13 @@ func _filesystem_status() -> Dictionary:
 	return {
 		"is_scanning": filesystem.is_scanning(),
 		"scanning_progress": filesystem.get_scanning_progress(),
-		"is_importing": filesystem.is_importing(),
+		"is_importing": _filesystem_is_importing(filesystem),
 	}
 
 
 func _filesystem_scan() -> Dictionary:
 	var filesystem := EditorInterface.get_resource_filesystem()
-	if filesystem.is_importing():
+	if _filesystem_is_importing(filesystem):
 		return _failure("cannot start a filesystem scan while resources are importing")
 	if filesystem.is_scanning():
 		return {
@@ -710,7 +710,7 @@ func _filesystem_reimport(params: Dictionary) -> Dictionary:
 		return _failure("reimport requires between 1 and 100 paths")
 
 	var filesystem := EditorInterface.get_resource_filesystem()
-	if filesystem.is_importing() or filesystem.is_scanning():
+	if _filesystem_is_importing(filesystem) or filesystem.is_scanning():
 		return _failure("filesystem is busy importing or scanning")
 
 	var paths := PackedStringArray()
@@ -790,6 +790,12 @@ func _collect_owner_candidates(node: Node, recursive: bool, output: Array[Node])
 		return
 	for child in node.get_children():
 		_collect_owner_candidates(child, true, output)
+
+
+func _filesystem_is_importing(filesystem: EditorFileSystem) -> bool:
+	if filesystem.has_method("is_importing"):
+		return bool(filesystem.call("is_importing"))
+	return false
 
 
 func _find_node(root: Node, path: String) -> Node:
