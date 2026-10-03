@@ -1,8 +1,8 @@
 # Tool catalog
 
-This document distinguishes the **implemented Phase A–D surface** from the broader planned catalog.
+This document distinguishes the **implemented Phase A–F surface** from the broader planned catalog.
 
-## Implemented in Phase A–D
+## Implemented in Phase A–F
 
 ### System
 
@@ -463,6 +463,136 @@ Collision layer/mask bitfields are configurable, and Area2D workflows can config
 
 Permission: standard/write.
 
+## 3D and gameplay structures
+
+### `mesh3d_create`
+
+Creates MeshInstance3D using a project-local Mesh resource or a supported primitive mesh: box, sphere, capsule, cylinder, plane or quad.
+
+Permission: standard/write.
+
+### `camera3d_create`
+
+Creates Camera3D with transform, FOV, near/far distances and optional current-camera activation.
+
+Permission: standard/write.
+
+### `light3d_create`
+
+Creates DirectionalLight3D, OmniLight3D or SpotLight3D with color, energy, shadows and type-specific range/angle controls.
+
+Permission: standard/write.
+
+### `world_environment_create`
+
+Creates WorldEnvironment with a new Environment resource and bounded background/ambient-light configuration.
+
+Permission: standard/write.
+
+### `collision3d_shape_create`
+
+Creates CollisionShape3D beneath an existing CollisionObject3D using a structured shape definition.
+
+Supported shapes: box, sphere, capsule, cylinder, world boundary and convex polygon.
+
+Permission: standard/write.
+
+### `collision3d_body_create`
+
+Creates StaticBody3D, CharacterBody3D, RigidBody3D or Area3D together with a child CollisionShape3D and collision-layer/mask configuration.
+
+Permission: standard/write.
+
+### `skeleton3d_inspect`
+
+Inspects Skeleton3D hierarchy, rest transforms, current poses, parents and enabled state with bounded bone output.
+
+Permission: read.
+
+## Navigation
+
+### `navigation_region_create`
+
+Creates NavigationRegion2D or NavigationRegion3D with either an existing project-local navigation resource or a new empty NavigationPolygon/NavigationMesh.
+
+Permission: standard/write.
+
+### `navigation_agent_create`
+
+Creates NavigationAgent2D/3D with navigation layers, path/target desired distances, radius, speed, optional height and avoidance configuration.
+
+Permission: standard/write.
+
+### `navigation_link_create`
+
+Creates NavigationLink2D/3D between explicit endpoints, with layer, cost, enabled and bidirectional settings.
+
+Permission: standard/write.
+
+### `navigation_inspect`
+
+Inspects a supported navigation region, agent or link.
+
+Permission: read.
+
+## Animation and state machines
+
+### `animation_player_create`
+
+Creates an AnimationPlayer in the edited scene.
+
+Permission: standard/write.
+
+### `animation_create`
+
+Creates an Animation inside an AnimationLibrary, including length and none/linear/ping-pong loop modes.
+
+Permission: standard/write.
+
+### `animation_inspect`
+
+Lists AnimationPlayer libraries and animations with lengths, loop modes and track counts.
+
+Permission: read.
+
+### `animation_track_add`
+
+Creates a typed animation track bound to a NodePath/property path.
+
+Supported track types include value, 3D position/rotation/scale, blend shape, method, bezier, audio and nested animation tracks.
+
+Permission: standard/write.
+
+### `animation_key_insert`
+
+Inserts or replaces a key at an exact timestamp. 3D position/scale vectors and rotation Euler/quaternion values are converted to the corresponding Godot types.
+
+Permission: standard/write.
+
+### `animation_tree_create`
+
+Creates AnimationTree backed by AnimationNodeStateMachine and connects it to an AnimationPlayer.
+
+Permission: standard/write.
+
+### `animation_state_add`
+
+Adds an AnimationNodeAnimation state to an AnimationTree state machine.
+
+Permission: standard/write.
+
+### `animation_transition_add`
+
+Adds a state-machine transition with crossfade, switch mode and advance mode controls.
+
+Permission: standard/write.
+
+### `animation_tree_inspect`
+
+Returns state names, positions, animation bindings and state-machine transitions.
+
+Permission: read.
+
 ## Runtime
 
 ### `project_run`
@@ -582,26 +712,21 @@ The following categories are intentionally planned as dedicated structured tools
 
 ## 2D/3D
 
-- Camera3D;
-- MeshInstance3D;
-- 3D collision shapes;
-- lights;
-- WorldEnvironment.
+- richer 3D primitive authoring parameters;
+- mesh surface/material inspection;
+- geometry ownership/LOD helpers.
 
 ## Physics/navigation
 
-- 2D/3D collision layers and masks;
-- 3D CharacterBody/RigidBody/StaticBody creation;
-- Area3D;
-- NavigationRegion;
-- NavigationAgent;
-- NavigationLink.
+- navigation map baking helpers;
+- navigation debug/validation;
+- richer physics-body tuning helpers.
 
 ## Animation/audio
 
-- AnimationPlayer;
-- animation libraries/tracks/keys;
-- AnimationTree;
+- animation track removal/reorder helpers;
+- state-machine parameter/playback helpers;
+- animation blending helpers;
 - audio buses;
 - AudioStreamPlayer variants.
 
