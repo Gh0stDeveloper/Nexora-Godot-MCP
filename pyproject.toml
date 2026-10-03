@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nexora-godot-mcp"
+version = "0.1.0"
+description = "Secure local-first MCP gateway for AI-native Godot development."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Ghost Developer" }]
+keywords = ["mcp", "godot", "gamedev", "ai", "automation", "self-hosted"]
+dependencies = [
+  "mcp>=2.0,<3",
+  "httpx>=0.28,<1",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.9,<3",
+  "starlette>=0.48,<1",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.17,<2",
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.1,<2",
+  "ruff>=0.12,<1",
+]
+
+[project.scripts]
+nexora-godot-mcp = "nexora_godot_mcp.server:main"
+nexora-godot = "nexora_godot_mcp.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nexora_godot_mcp"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"godot_addon/addons/nexora_godot_mcp" = "nexora_godot_mcp/_addon"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["nexora_godot_mcp"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+asyncio_mode = "auto"
