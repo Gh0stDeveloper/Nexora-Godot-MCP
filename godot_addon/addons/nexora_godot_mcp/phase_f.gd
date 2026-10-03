@@ -482,11 +482,12 @@ func _animation_tree_create(params: Dictionary) -> Dictionary:
 
 	var tree := AnimationTree.new()
 	tree.name = name
-	tree.anim_player = tree.get_path_to(player)
 	tree.tree_root = AnimationNodeStateMachine.new()
-	tree.active = bool(params.get("active", true))
+	var requested_active := bool(params.get("active", true))
 
 	_commit_add_node(root, parent, tree, "Nexora: Create AnimationTree")
+	tree.anim_player = tree.get_path_to(player)
+	tree.active = requested_active
 	return {
 		"path": str(root.get_path_to(tree)),
 		"animation_player_path": String(tree.anim_player),
