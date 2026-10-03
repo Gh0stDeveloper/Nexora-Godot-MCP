@@ -332,9 +332,22 @@ func _batch_execute(params: Dictionary) -> Dictionary:
 				break
 			continue
 		var operation := String(step.get("operation", ""))
-		if operation == "batch.execute":
-			var nested := {"index": index, "ok": false, "error": "nested batches are not allowed"}
-			results.append(nested)
+		var forbidden := {
+			"batch.execute": true,
+			"editor_script.execute": true,
+			"node.delete": true,
+			"scene.close": true,
+			"scene.reload": true,
+			"scene.create": true,
+			"scene.duplicate": true,
+		}
+		if forbidden.has(operation):
+			var blocked := {
+				"index": index,
+				"ok": false,
+				"error": "operation is not allowed inside batch_execute: %s" % operation,
+			}
+			results.append(blocked)
 			if stop_on_error:
 				break
 			continue
