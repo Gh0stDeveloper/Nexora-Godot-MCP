@@ -572,7 +572,8 @@ func _animated_sprite2d_create(params: Dictionary) -> Dictionary:
 	var sprite := AnimatedSprite2D.new()
 	sprite.name = name
 	sprite.sprite_frames = frames
-	sprite.animation = StringName(String(params.get("initial_animation", first_animation)))
+	var requested_animation := String(params.get("initial_animation", "")).strip_edges()
+	sprite.animation = StringName(first_animation if requested_animation.is_empty() else requested_animation)
 	if not frames.has_animation(sprite.animation):
 		sprite.free()
 		return _failure("initial_animation does not exist in supplied animations")
@@ -720,6 +721,14 @@ func _tilemap_set_cells(params: Dictionary) -> Dictionary:
 	if node is TileMap and (layer_index < 0 or layer_index >= node.get_layers_count()):
 		return _failure("TileMap layer index is out of range")
 
+	var tile_set: TileSet
+	if node is TileMapLayer:
+		tile_set = node.tile_set
+	else:
+		tile_set = node.tile_set
+	if tile_set == null:
+		return _failure("TileMap node has no TileSet")
+
 	var raw_cells = params.get("cells", [])
 	if typeof(raw_cells) != TYPE_ARRAY or raw_cells.is_empty() or raw_cells.size() > 500:
 		return _failure("cells must contain between 1 and 500 entries")
@@ -735,6 +744,8 @@ func _tilemap_set_cells(params: Dictionary) -> Dictionary:
 			return coords_result
 		var coords: Vector2i = coords_result["value"]
 		var source_id := int(cell.get("source_id", -1))
+		if source_id >= 0 and not tile_set.has_source(source_id):
+			return _failure("TileSet does not contain source_id %d" % source_id)
 		if source_id < 0 and not confirm_erase:
 			return _failure("confirm_erase=true is required when erasing TileMap cells")
 		var atlas_coords := Vector2i(-1, -1)
@@ -911,6 +922,16 @@ func _collision2d_body_create(params: Dictionary) -> Dictionary:
 		return _failure("could not instantiate CollisionObject2D")
 	var body: CollisionObject2D = instance
 	body.name = name
+	var collision_layer := int(params.get("collision_layer", 1))
+	var collision_mask := int(params.get("collision_mask", 1))
+	if collision_layer < 0 or collision_mask < 0:
+		body.free()
+		return _failure("collision_layer and collision_mask must be non-negative bitmasks")
+	body.collision_layer = collision_layer
+	body.collision_mask = collision_mask
+	if body is Area2D:
+		body.monitoring = bool(params.get("monitoring", true))
+		body.monitorable = bool(params.get("monitorable", true))
 
 	var shape_result := _shape2d_from_dict(params.get("shape", {}))
 	if shape_result.has("__nexora_error"):
@@ -932,6 +953,8 @@ func _collision2d_body_create(params: Dictionary) -> Dictionary:
 	return {
 		"path": str(root.get_path_to(body)),
 		"body_type": body.get_class(),
+		"collision_layer": body.collision_layer,
+		"collision_mask": body.collision_mask,
 		"collision_path": str(root.get_path_to(collision)),
 		"shape_type": collision.shape.get_class(),
 		"undoable": true,
