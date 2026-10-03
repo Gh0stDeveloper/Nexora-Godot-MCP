@@ -98,25 +98,24 @@ func _scene_create(params: Dictionary) -> Dictionary:
 	var root_type := String(params.get("root_type", ""))
 	var root_name := String(params.get("name", ""))
 	var path := String(params.get("path", ""))
-	var replace_current := bool(params.get("replace_current", false))
-	var confirm_discard := bool(params.get("confirm_discard", false))
+	var open_after_create := bool(params.get("open_after_create", true))
+	var overwrite := bool(params.get("overwrite", false))
 
 	if not _valid_resource_path(path, [".tscn"]):
 		return _failure("scene path must be a project-local .tscn resource")
 	if root_type.is_empty() or root_name.is_empty():
 		return _failure("root_type and name are required")
+	if not _valid_node_name(root_name):
+		return _failure("invalid scene root name")
 	if not ClassDB.class_exists(root_type):
 		return _failure("unknown Godot class: %s" % root_type)
 
-	var current := EditorInterface.get_edited_scene_root()
-	if current != null:
-		if not replace_current:
-			return _failure("an edited scene is active; set replace_current=true to replace it")
-		if _active_scene_is_unsaved(current) and not confirm_discard:
-			return _failure("active scene has unsaved changes; confirm_discard=true is required")
-		var close_error := EditorInterface.close_scene()
-		if close_error != OK:
-			return _failure("could not close active scene (error %d)" % close_error)
+	var open_scenes := EditorInterface.get_open_scenes()
+	if FileAccess.file_exists(path):
+		if not overwrite:
+			return _failure("destination scene already exists; overwrite=true is required")
+		if path in open_scenes:
+			return _failure("refusing to overwrite a scene that is currently open in the editor")
 
 	var instance = ClassDB.instantiate(root_type)
 	if not instance is Node:
@@ -126,13 +125,27 @@ func _scene_create(params: Dictionary) -> Dictionary:
 
 	var root: Node = instance
 	root.name = root_name
-	EditorInterface.add_root_node(root)
-	EditorInterface.save_scene_as(path)
+	var packed := PackedScene.new()
+	var pack_error := packed.pack(root)
+	if pack_error != OK:
+		root.free()
+		return _failure("PackedScene.pack failed with error %d" % pack_error)
+
+	var save_error := ResourceSaver.save(packed, path)
+	root.free()
+	if save_error != OK:
+		return _failure("ResourceSaver.save failed with error %d" % save_error)
+
+	EditorInterface.get_resource_filesystem().update_file(path)
+	if open_after_create:
+		EditorInterface.open_scene_from_path(path)
+
 	return {
 		"path": path,
-		"root": root.name,
-		"type": root.get_class(),
+		"root": root_name,
+		"type": root_type,
 		"created": true,
+		"opened": open_after_create,
 	}
 
 
