@@ -5,7 +5,6 @@ import json
 import os
 import secrets
 import shutil
-import sys
 import urllib.error
 import urllib.request
 from importlib.resources import files
