@@ -363,18 +363,32 @@ func _connection_to_dict(root: Node, raw_connection) -> Dictionary:
 
 func _input_actions_list() -> Dictionary:
 	var actions: Array[Dictionary] = []
-	for action_variant in InputMap.get_actions():
-		var action := StringName(action_variant)
+	for item_variant in ProjectSettings.get_property_list():
+		var item: Dictionary = item_variant
+		var key := String(item.get("name", ""))
+		if not key.begins_with("input/"):
+			continue
+		var action_name := key.trim_prefix("input/")
+		var setting = ProjectSettings.get_setting(key, {})
+		if typeof(setting) != TYPE_DICTIONARY:
+			continue
+		var action_data: Dictionary = setting
+		var raw_events = action_data.get("events", [])
 		var events: Array[Dictionary] = []
-		for event in InputMap.action_get_events(action):
-			events.append(_input_event_to_dict(event))
+		if typeof(raw_events) == TYPE_ARRAY:
+			for event_variant in raw_events:
+				if event_variant is InputEvent:
+					events.append(_input_event_to_dict(event_variant))
 		actions.append({
-			"name": String(action),
-			"deadzone": InputMap.action_get_deadzone(action),
+			"name": action_name,
+			"deadzone": float(action_data.get("deadzone", 0.5)),
 			"events": events,
 			"event_count": events.size(),
-			"persisted": ProjectSettings.has_setting("input/%s" % String(action)),
+			"persisted": true,
 		})
+	actions.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return String(a.get("name", "")) < String(b.get("name", ""))
+	)
 	return {"actions": actions, "count": actions.size()}
 
 
@@ -383,15 +397,18 @@ func _input_action_create(params: Dictionary) -> Dictionary:
 	var deadzone := float(params.get("deadzone", 0.5))
 	if name.is_empty():
 		return _failure("input action name cannot be empty")
+	if name.contains("/"):
+		return _failure("input action name cannot contain '/'")
 	if deadzone < 0.0 or deadzone > 1.0:
 		return _failure("deadzone must be between 0 and 1")
-	if InputMap.has_action(StringName(name)):
+	var key := "input/%s" % name
+	if ProjectSettings.has_setting(key):
 		return _failure("input action already exists")
 
-	InputMap.add_action(StringName(name), deadzone)
-	var save_error := _persist_input_action(StringName(name))
+	ProjectSettings.set_setting(key, {"deadzone": deadzone, "events": []})
+	var save_error := ProjectSettings.save()
 	if save_error != OK:
-		InputMap.erase_action(StringName(name))
+		ProjectSettings.set_setting(key, null)
 		return _failure("ProjectSettings.save failed with error %d" % save_error)
 	return {
 		"name": name,
@@ -403,53 +420,72 @@ func _input_action_create(params: Dictionary) -> Dictionary:
 
 func _input_action_set_deadzone(params: Dictionary) -> Dictionary:
 	var name := String(params.get("name", ""))
-	var action := StringName(name)
 	var deadzone := float(params.get("deadzone", 0.5))
-	if not InputMap.has_action(action):
+	var key := "input/%s" % name
+	if not ProjectSettings.has_setting(key):
 		return _failure("input action does not exist")
 	if deadzone < 0.0 or deadzone > 1.0:
 		return _failure("deadzone must be between 0 and 1")
-
-	InputMap.action_set_deadzone(action, deadzone)
-	var save_error := _persist_input_action(action)
+	var previous = ProjectSettings.get_setting(key)
+	if typeof(previous) != TYPE_DICTIONARY:
+		return _failure("input action setting is malformed")
+	var updated: Dictionary = previous.duplicate(true)
+	updated["deadzone"] = deadzone
+	ProjectSettings.set_setting(key, updated)
+	var save_error := ProjectSettings.save()
 	if save_error != OK:
+		ProjectSettings.set_setting(key, previous)
 		return _failure("ProjectSettings.save failed with error %d" % save_error)
 	return {"name": name, "deadzone": deadzone, "persisted": true}
 
 
 func _input_action_delete(name: String) -> Dictionary:
-	var action := StringName(name)
-	if not InputMap.has_action(action):
+	var key := "input/%s" % name
+	if not ProjectSettings.has_setting(key):
 		return _failure("input action does not exist")
-	InputMap.erase_action(action)
-	ProjectSettings.set_setting("input/%s" % name, null)
+	var previous = ProjectSettings.get_setting(key)
+	ProjectSettings.set_setting(key, null)
 	var save_error := ProjectSettings.save()
 	if save_error != OK:
+		ProjectSettings.set_setting(key, previous)
 		return _failure("ProjectSettings.save failed with error %d" % save_error)
 	return {"name": name, "deleted": true}
 
 
 func _input_event_add(params: Dictionary) -> Dictionary:
 	var name := String(params.get("action", ""))
-	var action := StringName(name)
-	if not InputMap.has_action(action):
+	var key := "input/%s" % name
+	if not ProjectSettings.has_setting(key):
 		return _failure("input action does not exist")
 
 	var event_result := _input_event_from_dict(params.get("event", {}))
 	if event_result.has("__nexora_error"):
 		return event_result
 	var event: InputEvent = event_result["event"]
-	for existing in InputMap.action_get_events(action):
-		if existing.is_match(event, true):
-			return _failure("equivalent input event is already assigned to action")
 
-	InputMap.action_add_event(action, event)
-	var save_error := _persist_input_action(action)
+	var previous = ProjectSettings.get_setting(key)
+	if typeof(previous) != TYPE_DICTIONARY:
+		return _failure("input action setting is malformed")
+	var updated: Dictionary = previous.duplicate(true)
+	var raw_events = updated.get("events", [])
+	if typeof(raw_events) != TYPE_ARRAY:
+		return _failure("input action events are malformed")
+	var events: Array = raw_events.duplicate(true)
+
+	for existing_variant in events:
+		if existing_variant is InputEvent:
+			var existing: InputEvent = existing_variant
+			if existing.is_match(event, true):
+				return _failure("equivalent input event is already assigned to action")
+
+	events.append(event)
+	updated["events"] = events
+	ProjectSettings.set_setting(key, updated)
+	var save_error := ProjectSettings.save()
 	if save_error != OK:
-		InputMap.action_erase_event(action, event)
+		ProjectSettings.set_setting(key, previous)
 		return _failure("ProjectSettings.save failed with error %d" % save_error)
 
-	var events := InputMap.action_get_events(action)
 	return {
 		"action": name,
 		"index": events.size() - 1,
@@ -460,37 +496,36 @@ func _input_event_add(params: Dictionary) -> Dictionary:
 
 func _input_event_remove(params: Dictionary) -> Dictionary:
 	var name := String(params.get("action", ""))
-	var action := StringName(name)
 	var index := int(params.get("index", -1))
-	if not InputMap.has_action(action):
+	var key := "input/%s" % name
+	if not ProjectSettings.has_setting(key):
 		return _failure("input action does not exist")
-	var events := InputMap.action_get_events(action)
+
+	var previous = ProjectSettings.get_setting(key)
+	if typeof(previous) != TYPE_DICTIONARY:
+		return _failure("input action setting is malformed")
+	var updated: Dictionary = previous.duplicate(true)
+	var raw_events = updated.get("events", [])
+	if typeof(raw_events) != TYPE_ARRAY:
+		return _failure("input action events are malformed")
+	var events: Array = raw_events.duplicate(true)
 	if index < 0 or index >= events.size():
 		return _failure("input event index is out of range")
-
-	var event: InputEvent = events[index]
-	InputMap.action_erase_event(action, event)
-	var save_error := _persist_input_action(action)
+	var removed = events[index]
+	events.remove_at(index)
+	updated["events"] = events
+	ProjectSettings.set_setting(key, updated)
+	var save_error := ProjectSettings.save()
 	if save_error != OK:
-		InputMap.action_add_event(action, event)
+		ProjectSettings.set_setting(key, previous)
 		return _failure("ProjectSettings.save failed with error %d" % save_error)
+
 	return {
 		"action": name,
 		"index": index,
-		"removed": _input_event_to_dict(event),
+		"removed": _input_event_to_dict(removed) if removed is InputEvent else str(removed),
 		"persisted": true,
 	}
-
-
-func _persist_input_action(action: StringName) -> Error:
-	ProjectSettings.set_setting(
-		"input/%s" % String(action),
-		{
-			"deadzone": InputMap.action_get_deadzone(action),
-			"events": InputMap.action_get_events(action),
-		}
-	)
-	return ProjectSettings.save()
 
 
 func _input_event_from_dict(raw) -> Dictionary:
