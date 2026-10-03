@@ -669,17 +669,20 @@ func _tilemap_inspect(params: Dictionary) -> Dictionary:
 	var layer_index := int(params.get("layer", 0))
 	var used_cells: Array[Vector2i] = []
 	var tile_set: TileSet
+	var used_rect := Rect2i()
 
 	if node is TileMapLayer:
 		var tile_layer: TileMapLayer = node
 		used_cells = tile_layer.get_used_cells()
 		tile_set = tile_layer.tile_set
+		used_rect = tile_layer.get_used_rect()
 	elif node is TileMap:
 		var legacy: TileMap = node
 		if layer_index < 0 or layer_index >= legacy.get_layers_count():
 			return _failure("TileMap layer index is out of range")
 		used_cells = legacy.get_used_cells(layer_index)
 		tile_set = legacy.tile_set
+		used_rect = legacy.get_used_rect()
 	else:
 		return _failure("node must be TileMapLayer or legacy TileMap")
 
@@ -688,7 +691,6 @@ func _tilemap_inspect(params: Dictionary) -> Dictionary:
 		if cells.size() >= max_cells:
 			break
 		cells.append(_tile_cell_to_dict(node, layer_index, coords))
-	var used_rect = node.get_used_rect()
 	return {
 		"path": "." if node == root else str(root.get_path_to(node)),
 		"type": node.get_class(),
