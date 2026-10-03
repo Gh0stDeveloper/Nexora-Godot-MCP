@@ -86,7 +86,7 @@ def apply_revision_patch(
     if updated == current:
         raise ScriptPatchError("script_patch produced no content change")
 
-    mode = path.stat().st_mode
+    mode = path.stat().st_mode & 0o7777
     temp_name: str | None = None
     try:
         with tempfile.NamedTemporaryFile(
