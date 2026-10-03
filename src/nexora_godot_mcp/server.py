@@ -54,7 +54,7 @@ def _create_mcp() -> Any:
             "Nexora Godot MCP",
             title="Nexora Godot MCP",
             description="Secure local-first AI-native Godot development gateway",
-            version="0.3.0",
+            version="0.4.0",
             instructions=instructions,
             token_verifier=IntrospectionTokenVerifier(settings),
             auth=AuthSettings(
@@ -68,7 +68,7 @@ def _create_mcp() -> Any:
         "Nexora Godot MCP",
         title="Nexora Godot MCP",
         description="Secure local-first AI-native Godot development gateway",
-        version="0.3.0",
+        version="0.4.0",
         instructions=instructions,
     )
 
@@ -212,7 +212,7 @@ async def health(_: Request) -> JSONResponse:
     return JSONResponse(
         {
             "service": "Nexora Godot MCP",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "status": "ok",
             "auth_mode": settings.auth_mode,
             "permission_profile": settings.permission_profile,
@@ -238,7 +238,7 @@ async def godot_status() -> dict[str, Any]:
         version = None
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "godot_version": version,
         "project_root": str(settings.resolved_project_root),
         "bridge": bridge_result,
@@ -1030,6 +1030,467 @@ async def autoload_remove(name: str, confirm: bool = False) -> dict[str, Any]:
     )
 
 
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def ui_create_control(
+    parent_path: str,
+    control_type: str,
+    name: str,
+    text: str = "",
+    minimum_size: list[float] | None = None,
+    properties: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Create a Control-derived node with optional text, minimum size and safe properties."""
+    if minimum_size is not None and len(minimum_size) != 2:
+        raise ValueError("minimum_size must contain exactly 2 numbers")
+    return await _call_bridge(
+        "ui.control_create",
+        {
+            "parent_path": parent_path,
+            "control_type": control_type,
+            "name": name,
+            "text": text,
+            "minimum_size": minimum_size,
+            "properties": properties or {},
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def ui_create_container(
+    parent_path: str,
+    container_type: str,
+    name: str,
+    columns: int = 1,
+    minimum_size: list[float] | None = None,
+    properties: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Create a supported Godot Container with editor Undo/Redo integration."""
+    if not 1 <= columns <= 64:
+        raise ValueError("columns must be between 1 and 64")
+    if minimum_size is not None and len(minimum_size) != 2:
+        raise ValueError("minimum_size must contain exactly 2 numbers")
+    return await _call_bridge(
+        "ui.container_create",
+        {
+            "parent_path": parent_path,
+            "container_type": container_type,
+            "name": name,
+            "columns": columns,
+            "minimum_size": minimum_size,
+            "properties": properties or {},
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def ui_set_layout(
+    node_path: str,
+    preset: str = "",
+    anchors: list[float] | None = None,
+    offsets: list[float] | None = None,
+    margin: float = 0.0,
+    size: list[float] | None = None,
+) -> dict[str, Any]:
+    """Set responsive Control anchors/offsets directly or through a common layout preset."""
+    if anchors is not None and len(anchors) != 4:
+        raise ValueError("anchors must contain [left, top, right, bottom]")
+    if offsets is not None and len(offsets) != 4:
+        raise ValueError("offsets must contain [left, top, right, bottom]")
+    if size is not None and len(size) != 2:
+        raise ValueError("size must contain exactly 2 numbers")
+    if not preset.strip() and anchors is None and offsets is None:
+        raise ValueError("preset or anchors/offsets are required")
+    return await _call_bridge(
+        "ui.layout_set",
+        {
+            "node_path": node_path,
+            "preset": preset,
+            "anchors": anchors,
+            "offsets": offsets,
+            "margin": margin,
+            "size": size,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def ui_theme_apply(
+    node_path: str,
+    theme_path: str | None = None,
+    type_variation: str = "",
+    colors: dict[str, list[float]] | None = None,
+    font_sizes: dict[str, int] | None = None,
+    constants: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    """Apply a Theme resource/type variation and bounded local theme overrides to a Control."""
+    resource_path = ""
+    if theme_path:
+        resource_path = _resource_path(theme_path, must_exist=True)
+    return await _call_bridge(
+        "ui.theme_apply",
+        {
+            "node_path": node_path,
+            "theme_path": resource_path,
+            "type_variation": type_variation,
+            "colors": colors or {},
+            "font_sizes": font_sizes or {},
+            "constants": constants or {},
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def ui_text_set(node_path: str, text: str) -> dict[str, Any]:
+    """Set the text property on a supported Godot Control with Undo/Redo."""
+    return await _call_bridge(
+        "ui.text_set",
+        {"node_path": node_path, "text": text},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def ui_create_hud(
+    parent_path: str = ".",
+    name: str = "HUD",
+    title: str = "",
+    health_text: str = "Health: 100",
+    objective_text: str = "",
+) -> dict[str, Any]:
+    """Create a compact CanvasLayer HUD scaffold with title, health and objective labels."""
+    return await _call_bridge(
+        "ui.hud_create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "title": title,
+            "health_text": health_text,
+            "objective_text": objective_text,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def ui_create_menu(
+    buttons: list[str | dict[str, Any]],
+    parent_path: str = ".",
+    name: str = "Menu",
+    title: str = "Menu",
+) -> dict[str, Any]:
+    """Create a centered CanvasLayer menu scaffold with up to 20 buttons."""
+    if len(buttons) > 20:
+        raise ValueError("buttons may contain at most 20 entries")
+    return await _call_bridge(
+        "ui.menu_create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "title": title,
+            "buttons": buttons,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def sprite2d_create(
+    parent_path: str,
+    name: str,
+    texture_path: str | None = None,
+    position: list[float] | None = None,
+    centered: bool = True,
+    flip_h: bool = False,
+    flip_v: bool = False,
+    hframes: int = 1,
+    vframes: int = 1,
+    frame: int = 0,
+) -> dict[str, Any]:
+    """Create a Sprite2D using an optional project-local Texture2D resource."""
+    if position is not None and len(position) != 2:
+        raise ValueError("position must contain exactly 2 numbers")
+    if not 1 <= hframes <= 1024 or not 1 <= vframes <= 1024:
+        raise ValueError("hframes and vframes must be between 1 and 1024")
+    resource_path = ""
+    if texture_path:
+        resource_path = _resource_path(texture_path, must_exist=True)
+    return await _call_bridge(
+        "sprite2d.create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "texture_path": resource_path,
+            "position": position,
+            "centered": centered,
+            "flip_h": flip_h,
+            "flip_v": flip_v,
+            "hframes": hframes,
+            "vframes": vframes,
+            "frame": frame,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animated_sprite2d_create(
+    parent_path: str,
+    name: str,
+    animations: list[dict[str, Any]],
+    initial_animation: str | None = None,
+    autoplay: bool = False,
+    position: list[float] | None = None,
+    speed_scale: float = 1.0,
+    flip_h: bool = False,
+    flip_v: bool = False,
+) -> dict[str, Any]:
+    """Create AnimatedSprite2D and SpriteFrames from project-local texture frame lists."""
+    if not 1 <= len(animations) <= 32:
+        raise ValueError("animations must contain between 1 and 32 entries")
+    if position is not None and len(position) != 2:
+        raise ValueError("position must contain exactly 2 numbers")
+    normalized: list[dict[str, Any]] = []
+    total_frames = 0
+    for animation in animations:
+        frame_paths = animation.get("frames")
+        if not isinstance(frame_paths, list) or not frame_paths:
+            raise ValueError("each animation requires a non-empty frames list")
+        total_frames += len(frame_paths)
+        if total_frames > 256:
+            raise ValueError("A create call may contain at most 256 animation frames")
+        normalized.append(
+            {
+                **animation,
+                "frames": [
+                    _resource_path(str(path), must_exist=True) for path in frame_paths
+                ],
+            }
+        )
+    return await _call_bridge(
+        "animated_sprite2d.create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "animations": normalized,
+            "initial_animation": initial_animation or "",
+            "autoplay": autoplay,
+            "position": position,
+            "speed_scale": speed_scale,
+            "flip_h": flip_h,
+            "flip_v": flip_v,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def tilemap_layer_create(
+    parent_path: str,
+    name: str,
+    tile_set_path: str | None = None,
+    create_empty_tileset: bool = True,
+    tile_size: list[int] | None = None,
+    position: list[float] | None = None,
+) -> dict[str, Any]:
+    """Create a TileMapLayer with an existing TileSet or a new empty TileSet."""
+    if tile_size is not None and len(tile_size) != 2:
+        raise ValueError("tile_size must contain exactly 2 integers")
+    if position is not None and len(position) != 2:
+        raise ValueError("position must contain exactly 2 numbers")
+    resource_path = ""
+    if tile_set_path:
+        resource_path = _resource_path(tile_set_path, must_exist=True)
+    return await _call_bridge(
+        "tilemap_layer.create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "tile_set_path": resource_path,
+            "create_empty_tileset": create_empty_tileset,
+            "tile_size": tile_size,
+            "position": position,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def tilemap_inspect(
+    node_path: str,
+    layer: int = 0,
+    max_cells: int = 500,
+) -> dict[str, Any]:
+    """Inspect a TileMapLayer or legacy TileMap and return bounded used-cell data."""
+    if layer < 0:
+        raise ValueError("layer must be >= 0")
+    if not 1 <= max_cells <= 2000:
+        raise ValueError("max_cells must be between 1 and 2000")
+    return await _call_bridge(
+        "tilemap.inspect",
+        {"node_path": node_path, "layer": layer, "max_cells": max_cells},
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def tileset_atlas_source_add(
+    node_path: str,
+    texture_path: str,
+    texture_region_size: list[int],
+    tiles: list[list[int]],
+    source_id: int = -1,
+) -> dict[str, Any]:
+    """Add a TileSetAtlasSource and selected atlas tiles to a TileMap node's TileSet."""
+    if len(texture_region_size) != 2:
+        raise ValueError("texture_region_size must contain exactly 2 integers")
+    if not 1 <= len(tiles) <= 256:
+        raise ValueError("tiles must contain between 1 and 256 atlas coordinates")
+    if any(len(coords) != 2 for coords in tiles):
+        raise ValueError("each tile atlas coordinate must contain exactly 2 integers")
+    resource_path = _resource_path(texture_path, must_exist=True)
+    return await _call_bridge(
+        "tileset.atlas_source_add",
+        {
+            "node_path": node_path,
+            "texture_path": resource_path,
+            "texture_region_size": texture_region_size,
+            "tiles": tiles,
+            "source_id": source_id,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def tilemap_set_cells(
+    node_path: str,
+    cells: list[dict[str, Any]],
+    layer: int = 0,
+    confirm_erase: bool = False,
+) -> dict[str, Any]:
+    """Set up to 500 TileMap cells with Undo/Redo. Erasing cells requires confirm_erase=true."""
+    if layer < 0:
+        raise ValueError("layer must be >= 0")
+    if not 1 <= len(cells) <= 500:
+        raise ValueError("cells must contain between 1 and 500 entries")
+    if any(int(cell.get("source_id", -1)) < 0 for cell in cells) and not confirm_erase:
+        raise ValueError("confirm_erase=true is required when any source_id is -1")
+    return await _call_bridge(
+        "tilemap.set_cells",
+        {
+            "node_path": node_path,
+            "layer": layer,
+            "cells": cells,
+            "confirm_erase": confirm_erase,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def camera2d_create(
+    parent_path: str,
+    name: str,
+    position: list[float] | None = None,
+    zoom: list[float] | None = None,
+    enabled: bool = True,
+    position_smoothing_enabled: bool = False,
+    position_smoothing_speed: float = 5.0,
+    limits: list[float] | None = None,
+) -> dict[str, Any]:
+    """Create a Camera2D with position, zoom, smoothing and optional limits."""
+    for label, value, expected in (
+        ("position", position, 2),
+        ("zoom", zoom, 2),
+        ("limits", limits, 4),
+    ):
+        if value is not None and len(value) != expected:
+            raise ValueError(f"{label} must contain exactly {expected} numbers")
+    return await _call_bridge(
+        "camera2d.create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "position": position,
+            "zoom": zoom,
+            "enabled": enabled,
+            "position_smoothing_enabled": position_smoothing_enabled,
+            "position_smoothing_speed": position_smoothing_speed,
+            "limits": limits,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def collision2d_shape_create(
+    parent_path: str,
+    shape: dict[str, Any],
+    name: str = "CollisionShape2D",
+    position: list[float] | None = None,
+    disabled: bool = False,
+    one_way_collision: bool = False,
+    one_way_collision_margin: float = 1.0,
+) -> dict[str, Any]:
+    """Create CollisionShape2D below an existing CollisionObject2D using a structured shape definition."""
+    if position is not None and len(position) != 2:
+        raise ValueError("position must contain exactly 2 numbers")
+    if not shape:
+        raise ValueError("shape cannot be empty")
+    return await _call_bridge(
+        "collision2d.shape_create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "shape": shape,
+            "position": position,
+            "disabled": disabled,
+            "one_way_collision": one_way_collision,
+            "one_way_collision_margin": one_way_collision_margin,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def collision2d_body_create(
+    parent_path: str,
+    body_type: Literal["StaticBody2D", "CharacterBody2D", "RigidBody2D", "Area2D"],
+    name: str,
+    shape: dict[str, Any],
+    position: list[float] | None = None,
+    collision_layer: int = 1,
+    collision_mask: int = 1,
+    monitoring: bool = True,
+    monitorable: bool = True,
+) -> dict[str, Any]:
+    """Create a supported CollisionObject2D body/area with a child CollisionShape2D."""
+    if position is not None and len(position) != 2:
+        raise ValueError("position must contain exactly 2 numbers")
+    if not shape:
+        raise ValueError("shape cannot be empty")
+    if collision_layer < 0 or collision_mask < 0:
+        raise ValueError("collision_layer and collision_mask must be non-negative bitmasks")
+    return await _call_bridge(
+        "collision2d.body_create",
+        {
+            "parent_path": parent_path,
+            "body_type": body_type,
+            "name": name,
+            "shape": shape,
+            "position": position,
+            "collision_layer": collision_layer,
+            "collision_mask": collision_mask,
+            "monitoring": monitoring,
+            "monitorable": monitorable,
+        },
+        mutating=True,
+    )
+
+
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def resource_inspect(
     path: str,
@@ -1194,10 +1655,10 @@ async def batch_execute(
 
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def nexora_capabilities() -> dict[str, Any]:
-    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-C surface."""
+    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-D surface."""
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "dedicated_application": "Godot Engine",
         "all_in_one": False,
         "provider_agnostic": True,
@@ -1217,6 +1678,12 @@ async def nexora_capabilities() -> dict[str, Any]:
             "input",
             "project_settings",
             "autoloads",
+            "ui",
+            "2d",
+            "sprites",
+            "tilemaps",
+            "camera2d",
+            "collision2d",
             "runtime",
             "export",
             "batch",

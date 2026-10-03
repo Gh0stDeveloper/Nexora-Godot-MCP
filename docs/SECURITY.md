@@ -185,3 +185,14 @@ Autoload removal removes only the registration. It never deletes the referenced 
 ## Batch safety
 
 Confirmation-gated destructive operations are blocked inside `batch_execute`. This prevents a caller from bypassing a dedicated confirmation parameter by embedding the bridge operation directly inside a batch.
+
+
+## Phase D resource and TileMap safety
+
+UI Theme resources, textures and TileSet paths are constrained to the configured Godot project.
+
+Animated sprite creation is bounded by animation/frame limits to avoid unbounded resource expansion in a single MCP call.
+
+TileMap editing supports explicit erasure, but `source_id=-1` requires `confirm_erase=true`. The gateway checks this before calling the bridge, and the bridge independently rejects unconfirmed erase operations.
+
+Collision tools accept structured Shape2D definitions instead of arbitrary scripts. Primitive dimensions are normalized to valid positive values where appropriate.

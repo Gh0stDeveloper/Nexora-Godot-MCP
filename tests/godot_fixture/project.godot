@@ -6,7 +6,7 @@ config/name="Nexora Godot MCP Fixture"
 run/main_scene="res://main.tscn"
 
 [editor_plugins]
-enabled=PackedStringArray("res://addons/nexora_godot_mcp/plugin.cfg", "res://addons/nexora_phase_b_smoke/plugin.cfg", "res://addons/nexora_phase_c_smoke/plugin.cfg")
+enabled=PackedStringArray("res://addons/nexora_godot_mcp/plugin.cfg", "res://addons/nexora_phase_b_smoke/plugin.cfg", "res://addons/nexora_phase_c_smoke/plugin.cfg", "res://addons/nexora_phase_d_smoke/plugin.cfg")
 
 [rendering]
 renderer/rendering_method="gl_compatibility"

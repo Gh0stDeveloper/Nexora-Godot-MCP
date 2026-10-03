@@ -47,12 +47,13 @@ jobs:
           cp -R godot_addon/addons/nexora_godot_mcp tests/godot_fixture/addons/
           mkdir -p tests/godot_fixture/.nexora-godot
           printf '{"host":"127.0.0.1","port":9877,"secret":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","auto_start":false}\n' > tests/godot_fixture/.nexora-godot/bridge.json
-      - name: Parse project and run Phase B-C editor smoke
+      - name: Parse project and run Phase B-D editor smoke
         run: |
-          godot --headless --editor --path tests/godot_fixture --quit-after 8 > /tmp/nexora-godot.log 2>&1
+          godot --headless --editor --path tests/godot_fixture --quit-after 12 > /tmp/nexora-godot.log 2>&1
           cat /tmp/nexora-godot.log
           grep -q "NEXORA_PHASE_B_SMOKE_OK" /tmp/nexora-godot.log
           grep -q "NEXORA_PHASE_C_SMOKE_OK" /tmp/nexora-godot.log
+          grep -q "NEXORA_PHASE_D_SMOKE_OK" /tmp/nexora-godot.log
       - name: Check Phase C GDScript through Godot CLI
         run: |
           godot --headless --path tests/godot_fixture --check-only --script "$(pwd)/tests/godot_fixture/scripts/phase_c_fixture.gd"

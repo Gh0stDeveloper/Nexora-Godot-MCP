@@ -92,7 +92,7 @@ See [docs/TOOL_CATALOG.md](docs/TOOL_CATALOG.md) for the proposed MCP surface.
 
 ## Current implementation
 
-The Phase A foundation, Phase B scene/node production layer and Phase C code/signals/input layer are implemented, establishing a real editor workflow rather than only documenting a future design.
+The Phase A foundation, Phase B scene/node production layer, Phase C code/signals/input layer and Phase D UI/2D production layer are implemented, establishing a real editor workflow rather than only documenting a future design.
 
 Current MCP tools include:
 
@@ -112,6 +112,11 @@ Current MCP tools include:
 - persistent Input Map action/event management;
 - ProjectSettings read/set/clear with reserved namespaces protected;
 - autoload singleton list/add/remove;
+- Control/Container creation, anchors/offsets, themes and text editing;
+- HUD and menu scaffolds;
+- Sprite2D and AnimatedSprite2D authoring;
+- TileMapLayer creation, TileSet atlas-source authoring, TileMap/TileMapLayer inspection and undoable cell editing;
+- Camera2D and structured 2D collision workflows;
 - managed project runs with explicit `run_id`, status, logs and stop;
 - export preset discovery;
 - debug, release and PCK/ZIP exports;
