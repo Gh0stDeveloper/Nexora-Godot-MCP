@@ -1,8 +1,8 @@
 # Tool catalog
 
-This document distinguishes the **implemented Phase A surface** from the broader planned catalog.
+This document distinguishes the **implemented Phase A–B surface** from the broader planned catalog.
 
-## Implemented in Phase A
+## Implemented in Phase A–B
 
 ### System
 
@@ -69,11 +69,47 @@ Permission: standard/write.
 
 ### `scene_create`
 
-Creates a new scene root and saves it as `.tscn`.
+Creates a new PackedScene resource and saves it as `.tscn` without discarding the currently edited scene.
 
-Phase A intentionally requires an empty editor scene tab before creating a new root, avoiding silent destruction of unsaved work.
+The new scene can optionally be opened after creation. Existing destinations require `overwrite=true`, and an open scene is never overwritten.
 
 Permission: standard/write.
+
+### `scene_open_scenes`
+
+Lists currently open scenes and identifies the active scene. Godot 4.6 does not expose a stable unsaved-scene list through `EditorInterface`, so destructive scene actions use mandatory confirmation instead.
+
+Permission: read.
+
+### `scene_reload`
+
+Reloads the active scene from disk. `confirm_discard=true` is always required because reloading can discard editor changes.
+
+Permission: destructive/write.
+
+### `scene_close`
+
+Closes the active scene. `confirm_discard=true` is always required because Godot's close operation discards pending changes.
+
+Permission: destructive/write.
+
+### `scene_duplicate`
+
+Duplicates a project-local PackedScene. Existing destinations require `overwrite=true`.
+
+Permission: standard/write.
+
+### `scene_instantiate`
+
+Instantiates a PackedScene below a selected parent node with editor Undo/Redo integration.
+
+Permission: standard/write.
+
+### `scene_dependencies`
+
+Returns the external Resource dependencies declared by a scene.
+
+Permission: read.
 
 ## Nodes
 
@@ -95,7 +131,7 @@ Permission: standard/write.
 
 ### `node_delete`
 
-Deletes a non-root node.
+Deletes a non-root node through the Godot editor Undo/Redo history.
 
 Requires:
 
@@ -104,6 +140,62 @@ confirm=true
 ```
 
 Permission: standard/destructive.
+
+### `node_rename`
+
+Renames a node and records the operation in editor Undo/Redo history.
+
+Permission: standard/write.
+
+### `node_reparent`
+
+Moves a node to a new parent while preserving the supported global transform and retaining an undoable topology change.
+
+Permission: standard/write.
+
+### `node_transform_2d`
+
+Updates selected Node2D position, rotation, scale and/or skew components in local or global space.
+
+Permission: standard/write.
+
+### `node_transform_3d`
+
+Updates selected Node3D position, rotation and/or scale in local or global space. Unsafe mixed-sign/zero scales are rejected.
+
+Permission: standard/write.
+
+### `node_repair_owner`
+
+Repairs owner metadata for generated nodes/subtrees so they remain persistent in PackedScene saves.
+
+Permission: standard/write.
+
+## Resources and editor filesystem
+
+### `resource_inspect`
+
+Loads a project-local Resource and returns its type, UID, dependencies and a bounded serialized subset of stored properties.
+
+Permission: read.
+
+### `filesystem_status`
+
+Returns editor filesystem scan/import state and scan progress.
+
+Permission: read.
+
+### `filesystem_scan`
+
+Starts an EditorFileSystem scan when the importer is not busy.
+
+Permission: standard/write.
+
+### `asset_reimport`
+
+Reimports up to 100 existing project-local resource/source files.
+
+Permission: standard/write.
 
 ## Scripts
 
@@ -181,7 +273,7 @@ Runs `--export-pack`.
 
 Permission: standard/write.
 
-Exports remain inside the configured project root in Phase A.
+Exports remain inside the configured project root.
 
 ## Batch
 
@@ -189,7 +281,7 @@ Exports remain inside the configured project root in Phase A.
 
 Executes up to 50 structured editor operations.
 
-Nested batches are rejected.
+Nested batches are rejected. Destructive lifecycle operations such as node deletion, scene close/reload/create and scene overwrite/duplication are deliberately blocked inside batches so their dedicated confirmation or overwrite gates cannot be bypassed.
 
 Permission: standard/write.
 
@@ -210,29 +302,23 @@ The following categories are intentionally planned as dedicated structured tools
 
 ## Scene composition
 
-- `scene_duplicate`
-- `scene_instantiate`
-- `scene_dependencies`
 - `scene_validate`
+- inherited-scene creation
+- safe scene-tab creation helpers
 
 ## Nodes/transforms
 
-- `node_rename`
-- `node_reparent`
-- `node_transform_2d`
-- `node_transform_3d`
 - `node_set_owner`
+- node duplication
+- editor selection helpers
 
 ## Resources/assets
 
-- `resource_inspect`
 - `resource_create`
 - `resource_duplicate`
 - `resource_set_properties`
 - `resource_save`
 - `asset_import_status`
-- `asset_reimport`
-- `filesystem_scan`
 
 ## Scripts
 

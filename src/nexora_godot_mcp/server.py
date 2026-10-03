@@ -52,7 +52,7 @@ def _create_mcp() -> Any:
             "Nexora Godot MCP",
             title="Nexora Godot MCP",
             description="Secure local-first AI-native Godot development gateway",
-            version="0.1.0",
+            version="0.2.0",
             instructions=instructions,
             token_verifier=IntrospectionTokenVerifier(settings),
             auth=AuthSettings(
@@ -66,7 +66,7 @@ def _create_mcp() -> Any:
         "Nexora Godot MCP",
         title="Nexora Godot MCP",
         description="Secure local-first AI-native Godot development gateway",
-        version="0.1.0",
+        version="0.2.0",
         instructions=instructions,
     )
 
@@ -210,7 +210,7 @@ async def health(_: Request) -> JSONResponse:
     return JSONResponse(
         {
             "service": "Nexora Godot MCP",
-            "version": "0.1.0",
+            "version": "0.2.0",
             "status": "ok",
             "auth_mode": settings.auth_mode,
             "permission_profile": settings.permission_profile,
@@ -236,7 +236,7 @@ async def godot_status() -> dict[str, Any]:
         version = None
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "godot_version": version,
         "project_root": str(settings.resolved_project_root),
         "bridge": bridge_result,
@@ -337,15 +337,109 @@ async def scene_create(
     root_type: str,
     name: str,
     path: str,
+    open_after_create: bool = True,
+    overwrite: bool = False,
 ) -> dict[str, Any]:
-    """Create a new Godot scene with a Node-derived root type and save it as .tscn."""
+    """Create a PackedScene resource without discarding the currently edited scene."""
     resource_path = _resource_path(path)
     if not resource_path.lower().endswith(".tscn"):
         raise ValueError("scene_create path must end in .tscn")
     return await _call_bridge(
         "scene.create",
-        {"root_type": root_type, "name": name, "path": resource_path},
+        {
+            "root_type": root_type,
+            "name": name,
+            "path": resource_path,
+            "open_after_create": open_after_create,
+            "overwrite": overwrite,
+        },
         mutating=True,
+    )
+
+
+
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def scene_open_scenes() -> dict[str, Any]:
+    """List open Godot editor scenes and the active scene."""
+    return await _call_bridge("scene.open_scenes")
+
+
+@mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
+async def scene_reload(confirm_discard: bool = False) -> dict[str, Any]:
+    """Reload the active scene from disk. confirm_discard=true is always required."""
+    return await _call_bridge(
+        "scene.reload",
+        {"confirm_discard": confirm_discard},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
+async def scene_close(confirm_discard: bool = False) -> dict[str, Any]:
+    """Close the active scene. confirm_discard=true is always required."""
+    return await _call_bridge(
+        "scene.close",
+        {"confirm_discard": confirm_discard},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def scene_duplicate(
+    source_path: str,
+    destination_path: str,
+    overwrite: bool = False,
+) -> dict[str, Any]:
+    """Duplicate a PackedScene resource inside the configured Godot project."""
+    source = _resource_path(source_path, must_exist=True)
+    destination = _resource_path(destination_path)
+    if not source.lower().endswith((".tscn", ".scn")):
+        raise ValueError("source_path must be a .tscn or .scn scene")
+    if not destination.lower().endswith((".tscn", ".scn")):
+        raise ValueError("destination_path must be a .tscn or .scn scene")
+    return await _call_bridge(
+        "scene.duplicate",
+        {
+            "source_path": source,
+            "destination_path": destination,
+            "overwrite": overwrite,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def scene_instantiate(
+    scene_path: str,
+    parent_path: str = ".",
+    name: str | None = None,
+) -> dict[str, Any]:
+    """Instantiate a PackedScene below a node in the currently edited scene with editor undo support."""
+    resource_path = _resource_path(scene_path, must_exist=True)
+    if not resource_path.lower().endswith((".tscn", ".scn")):
+        raise ValueError("scene_path must be a .tscn or .scn scene")
+    return await _call_bridge(
+        "scene.instantiate",
+        {
+            "scene_path": resource_path,
+            "parent_path": parent_path,
+            "name": name or "",
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def scene_dependencies(path: str) -> dict[str, Any]:
+    """List external resource dependencies for a project-local Godot scene."""
+    resource_path = _resource_path(path, must_exist=True)
+    if not resource_path.lower().endswith((".tscn", ".scn")):
+        raise ValueError("path must be a .tscn or .scn scene")
+    return await _call_bridge(
+        "scene.dependencies",
+        {"path": resource_path},
     )
 
 
@@ -394,6 +488,130 @@ async def node_delete(node_path: str, confirm: bool = False) -> dict[str, Any]:
     return await _call_bridge(
         "node.delete",
         {"node_path": node_path},
+        mutating=True,
+    )
+
+
+
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def node_rename(node_path: str, new_name: str) -> dict[str, Any]:
+    """Rename a node in the edited scene and register the action with Godot editor undo/redo."""
+    if not new_name.strip():
+        raise ValueError("new_name cannot be empty")
+    if "/" in new_name:
+        raise ValueError("new_name cannot contain '/'")
+    return await _call_bridge(
+        "node.rename",
+        {"node_path": node_path, "new_name": new_name},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def node_reparent(
+    node_path: str,
+    new_parent_path: str,
+    new_index: int = -1,
+) -> dict[str, Any]:
+    """Reparent a non-root node while preserving its global transform and editor undo history."""
+    if new_index < -1:
+        raise ValueError("new_index must be -1 or greater")
+    return await _call_bridge(
+        "node.reparent",
+        {
+            "node_path": node_path,
+            "new_parent_path": new_parent_path,
+            "new_index": new_index,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def node_transform_2d(
+    node_path: str,
+    position: list[float] | None = None,
+    rotation: float | None = None,
+    scale: list[float] | None = None,
+    skew: float | None = None,
+    space: Literal["local", "global"] = "local",
+) -> dict[str, Any]:
+    """Set selected Node2D transform components in local or global space with undo/redo."""
+    if position is not None and len(position) != 2:
+        raise ValueError("position must contain exactly 2 numbers")
+    if scale is not None and len(scale) != 2:
+        raise ValueError("scale must contain exactly 2 numbers")
+    if position is None and rotation is None and scale is None and skew is None:
+        raise ValueError("At least one transform component is required")
+    return await _call_bridge(
+        "node.transform_2d",
+        {
+            "node_path": node_path,
+            "position": position,
+            "rotation": rotation,
+            "scale": scale,
+            "skew": skew,
+            "space": space,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def node_transform_3d(
+    node_path: str,
+    position: list[float] | None = None,
+    rotation: list[float] | None = None,
+    scale: list[float] | None = None,
+    space: Literal["local", "global"] = "local",
+) -> dict[str, Any]:
+    """Set selected Node3D transform components in local or global space with undo/redo."""
+    for label, value in (
+        ("position", position),
+        ("rotation", rotation),
+        ("scale", scale),
+    ):
+        if value is not None and len(value) != 3:
+            raise ValueError(f"{label} must contain exactly 3 numbers")
+    if position is None and rotation is None and scale is None:
+        raise ValueError("At least one transform component is required")
+    if scale is not None:
+        numeric = [float(item) for item in scale]
+        if any(abs(item) < 1e-8 for item in numeric):
+            raise ValueError("3D scale components cannot be zero")
+        all_positive = all(item > 0 for item in numeric)
+        all_negative = all(item < 0 for item in numeric)
+        if not (all_positive or all_negative):
+            raise ValueError("Godot Node3D scale components must use the same sign")
+    return await _call_bridge(
+        "node.transform_3d",
+        {
+            "node_path": node_path,
+            "position": position,
+            "rotation": rotation,
+            "scale": scale,
+            "space": space,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def node_repair_owner(
+    node_path: str = ".",
+    recursive: bool = True,
+    only_missing: bool = True,
+) -> dict[str, Any]:
+    """Repair scene ownership for a node/subtree so newly generated nodes persist when saved."""
+    return await _call_bridge(
+        "node.repair_owner",
+        {
+            "node_path": node_path,
+            "recursive": recursive,
+            "only_missing": only_missing,
+        },
         mutating=True,
     )
 
@@ -472,6 +690,51 @@ async def script_replace(
         "path": _resource_path(path, must_exist=True),
         "sha256": new_sha,
     }
+
+
+
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def resource_inspect(
+    path: str,
+    max_properties: int = 100,
+) -> dict[str, Any]:
+    """Inspect a Godot Resource and a bounded set of stored properties."""
+    if not 1 <= max_properties <= 500:
+        raise ValueError("max_properties must be between 1 and 500")
+    resource_path = _resource_path(path, must_exist=True)
+    return await _call_bridge(
+        "resource.inspect",
+        {"path": resource_path, "max_properties": max_properties},
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def filesystem_status() -> dict[str, Any]:
+    """Return Godot editor filesystem import/scan status."""
+    return await _call_bridge("filesystem.status")
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def filesystem_scan() -> dict[str, Any]:
+    """Ask the Godot editor filesystem to scan the configured project for changes."""
+    return await _call_bridge("filesystem.scan", mutating=True)
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def asset_reimport(paths: list[str]) -> dict[str, Any]:
+    """Reimport up to 100 existing project-local asset/resource files in Godot."""
+    if not paths:
+        raise ValueError("paths cannot be empty")
+    if len(paths) > 100:
+        raise ValueError("At most 100 files may be reimported per call")
+    resource_paths = [_resource_path(path, must_exist=True) for path in paths]
+    return await _call_bridge(
+        "filesystem.reimport",
+        {"paths": resource_paths},
+        mutating=True,
+    )
 
 
 @mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
@@ -570,7 +833,15 @@ async def batch_execute(
         raise ValueError("steps cannot be empty")
     if len(steps) > 50:
         raise ValueError("A batch may contain at most 50 steps")
-    forbidden = {"batch.execute", "editor_script.execute"}
+    forbidden = {
+        "batch.execute",
+        "editor_script.execute",
+        "node.delete",
+        "scene.close",
+        "scene.reload",
+        "scene.create",
+        "scene.duplicate",
+    }
     for step in steps:
         operation = str(step.get("operation", ""))
         if operation in forbidden:
@@ -584,10 +855,10 @@ async def batch_execute(
 
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def nexora_capabilities() -> dict[str, Any]:
-    """Describe the dedicated Godot MCP scope, permission mode and current Phase A surface."""
+    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-B surface."""
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "dedicated_application": "Godot Engine",
         "all_in_one": False,
         "provider_agnostic": True,
@@ -599,6 +870,9 @@ async def nexora_capabilities() -> dict[str, Any]:
             "project",
             "scene",
             "nodes",
+            "transforms",
+            "resources",
+            "filesystem",
             "scripts",
             "runtime",
             "export",

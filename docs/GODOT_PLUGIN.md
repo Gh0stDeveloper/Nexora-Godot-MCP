@@ -14,6 +14,7 @@ godot_addon/
     └── nexora_godot_mcp/
         ├── plugin.cfg
         ├── plugin.gd
+        ├── phase_b.gd
         └── bridge_server.gd
 ```
 
@@ -48,7 +49,7 @@ The bridge always binds explicitly to:
 127.0.0.1
 ```
 
-Changing the JSON `host` does not make the Phase A bridge listen publicly; the bridge server code fixes its listener to loopback.
+Changing the JSON `host` does not make the bridge listen publicly; the bridge server code fixes its listener to loopback.
 
 ## Protocol
 
@@ -89,15 +90,35 @@ No chat interface is embedded into Godot.
 
 ## Implemented editor operations
 
+Phase A core:
+
 - `system.status`
 - `scene.snapshot`
 - `scene.open`
 - `scene.save`
+- `batch.execute`
+
+Phase B production layer:
+
+- `scene.open_scenes`
+- `scene.reload`
+- `scene.close`
 - `scene.create`
+- `scene.duplicate`
+- `scene.instantiate`
+- `scene.dependencies`
 - `node.create`
 - `node.set_properties`
 - `node.delete`
-- `batch.execute`
+- `node.rename`
+- `node.reparent`
+- `node.transform_2d`
+- `node.transform_3d`
+- `node.repair_owner`
+- `resource.inspect`
+- `filesystem.status`
+- `filesystem.scan`
+- `filesystem.reimport`
 
 ## Scene inspection
 
@@ -134,12 +155,44 @@ Generic property editing intentionally blocks sensitive fields that should recei
 
 ## Future plugin work
 
-- EditorUndoRedoManager integration;
-- scene instancing;
 - script attach/detach;
 - signal tools;
-- filesystem scan/reimport;
+- Input Map and project settings;
 - debugger integration;
 - screenshot capture;
-- animation/resource operations;
+- animation/resource authoring operations;
 - structured UI builders.
+
+
+## Undo/Redo integration
+
+Phase B routes scene-node mutations through `EditorPlugin.get_undo_redo()`.
+
+Undoable actions include:
+
+- node creation;
+- scene instancing;
+- node property edits;
+- node deletion;
+- node rename;
+- node reparent;
+- Node2D transforms;
+- Node3D transforms;
+- owner repair.
+
+This keeps AI-generated editor work compatible with the same Undo/Redo workflow used by human editor operations.
+
+Filesystem/resource writes such as scene duplication and import rescans are not represented as scene-history actions because they operate on project resources rather than the active scene history.
+
+## Resource and filesystem handling
+
+Resource inspection uses `ResourceLoader` and serializes only a bounded set of stored properties into JSON-safe values.
+
+Filesystem refresh/reimport uses `EditorInterface.get_resource_filesystem()`. Reimport operations refuse to start while the editor filesystem is already scanning/importing.
+
+
+## Godot 4.6 scene-discard safety
+
+Godot 4.6 exposes open-scene information but does not provide a stable `EditorInterface` API for listing every unsaved scene. Because `close_scene()` discards pending changes, Nexora Godot MCP does not guess.
+
+`scene_close` and `scene_reload` therefore require `confirm_discard=true` every time. This conservative gate protects manual editor work even when the MCP cannot determine dirty-tab state.

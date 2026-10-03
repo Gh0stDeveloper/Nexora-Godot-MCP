@@ -2,9 +2,11 @@
 extends EditorPlugin
 
 const BridgeServer = preload("res://addons/nexora_godot_mcp/bridge_server.gd")
+const PhaseB = preload("res://addons/nexora_godot_mcp/phase_b.gd")
 const CONFIG_PATH := "res://.nexora-godot/bridge.json"
 
 var _bridge = BridgeServer.new()
+var _phase_b
 var _dock: VBoxContainer
 var _status_label: Label
 var _project_label: Label
@@ -13,6 +15,7 @@ var _bridge_config: Dictionary = {}
 
 
 func _enter_tree() -> void:
+	_phase_b = PhaseB.new(self)
 	_build_dock()
 	_bridge_config = _load_bridge_config()
 	if bool(_bridge_config.get("auto_start", true)):
@@ -130,22 +133,15 @@ func execute_operation(operation: String, params: Dictionary) -> Dictionary:
 			return _scene_open(String(params.get("path", "")))
 		"scene.save":
 			return _scene_save(String(params.get("path", "")))
-		"scene.create":
-			return _scene_create(
-				String(params.get("root_type", "")),
-				String(params.get("name", "")),
-				String(params.get("path", ""))
-			)
-		"node.create":
-			return _node_create(params)
-		"node.set_properties":
-			return _node_set_properties(params)
-		"node.delete":
-			return _node_delete(String(params.get("node_path", "")))
 		"batch.execute":
 			return _batch_execute(params)
-		_:
-			return _failure("unsupported_operation: %s" % operation)
+
+	if _phase_b != null:
+		var phase_b_result: Dictionary = _phase_b.execute(operation, params)
+		if not phase_b_result.has("__nexora_unhandled"):
+			return phase_b_result
+
+	return _failure("unsupported_operation: %s" % operation)
 
 
 func _system_status() -> Dictionary:
@@ -336,9 +332,22 @@ func _batch_execute(params: Dictionary) -> Dictionary:
 				break
 			continue
 		var operation := String(step.get("operation", ""))
-		if operation == "batch.execute":
-			var nested := {"index": index, "ok": false, "error": "nested batches are not allowed"}
-			results.append(nested)
+		var forbidden := {
+			"batch.execute": true,
+			"editor_script.execute": true,
+			"node.delete": true,
+			"scene.close": true,
+			"scene.reload": true,
+			"scene.create": true,
+			"scene.duplicate": true,
+		}
+		if forbidden.has(operation):
+			var blocked := {
+				"index": index,
+				"ok": false,
+				"error": "operation is not allowed inside batch_execute: %s" % operation,
+			}
+			results.append(blocked)
 			if stop_on_error:
 				break
 			continue

@@ -18,10 +18,10 @@ This should be the default pattern before substantial scene edits.
 
 ## Create a scene
 
-Phase A can create a scene when the editor has an empty scene tab:
+Phase B creates a PackedScene resource without closing or discarding the developer's current editor tab:
 
 ```text
-scene_create
+scene_create(open_after_create=true)
  ↓
 node_create
  ↓
@@ -32,7 +32,7 @@ scene_save
 project_validate
 ```
 
-Future phases will add safer new-tab/scene lifecycle helpers.
+If a destination scene already exists, overwrite must be explicit. A scene that is currently open in the editor is never overwritten by `scene_create`.
 
 ## Fix a script
 
@@ -94,7 +94,8 @@ A host may choose:
 
 "Use zombie.glb in my Godot enemy scene"
 → Godot MCP
-→ import/reimport tools (planned)
+→ asset_reimport / filesystem_scan when needed
+→ scene_instantiate
 → scene composition
 → gameplay
 ```
