@@ -55,4 +55,4 @@ jobs:
           grep -q "NEXORA_PHASE_C_SMOKE_OK" /tmp/nexora-godot.log
       - name: Check Phase C GDScript through Godot CLI
         run: |
-          godot --headless --path tests/godot_fixture --check-only --script tests/godot_fixture/scripts/phase_c_fixture.gd
+          godot --headless --path tests/godot_fixture --check-only --script "$(pwd)/tests/godot_fixture/scripts/phase_c_fixture.gd"

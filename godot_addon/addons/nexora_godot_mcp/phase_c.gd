@@ -660,7 +660,7 @@ func _project_settings_set(params: Dictionary) -> Dictionary:
 		changed.append({
 			"key": key,
 			"had_previous": ProjectSettings.has_setting(key),
-			"previous": _serialize_variant(ProjectSettings.get_setting(key), 0)
+			"previous": ProjectSettings.get_setting(key)
 				if ProjectSettings.has_setting(key) else null,
 		})
 		ProjectSettings.set_setting(key, value)
@@ -686,17 +686,24 @@ func _project_settings_clear(params: Dictionary) -> Dictionary:
 	if typeof(raw_keys) != TYPE_ARRAY or raw_keys.is_empty() or raw_keys.size() > 100:
 		return _failure("keys must contain between 1 and 100 settings")
 	var removed: Array[String] = []
+	var previous_values: Array[Dictionary] = []
 	for key_variant in raw_keys:
 		var key := String(key_variant)
 		var reserved_error := _validate_generic_setting_key(key)
 		if not reserved_error.is_empty():
 			return _failure(reserved_error)
 		if ProjectSettings.has_setting(key):
+			previous_values.append({
+				"key": key,
+				"value": ProjectSettings.get_setting(key),
+			})
 			ProjectSettings.set_setting(key, null)
 			removed.append(key)
 
 	var save_error := ProjectSettings.save()
 	if save_error != OK:
+		for previous in previous_values:
+			ProjectSettings.set_setting(String(previous["key"]), previous.get("value"))
 		return _failure("ProjectSettings.save failed with error %d" % save_error)
 	return {"removed": removed, "count": removed.size(), "saved": true}
 

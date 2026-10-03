@@ -210,6 +210,6 @@ Phase C adds editor operations for:
 
 Script attachment and signal connection changes use the editor Undo/Redo history.
 
-Input Map actions are persisted into `ProjectSettings` rather than existing only in the runtime singleton. Generic settings tools deliberately reject the `input/`, `autoload/` and `editor_plugins/` namespaces so callers cannot bypass the typed tools.
+Input Map actions are read and written directly through the project's `input/*` entries in `ProjectSettings`. This is intentional: inside an editor plugin, the `InputMap` singleton can represent editor actions rather than the project's bindings. Generic settings tools deliberately reject the `input/`, `autoload/` and `editor_plugins/` namespaces so callers cannot bypass the typed tools.
 
 Autoload operations use the EditorPlugin autoload API and never delete the underlying script/scene when a registration is removed.
