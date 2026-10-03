@@ -35,6 +35,9 @@ nexora-godot = "nexora_godot_mcp.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/nexora_godot_mcp"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"godot_addon/addons/nexora_godot_mcp" = "nexora_godot_mcp/_addon"
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
