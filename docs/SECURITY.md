@@ -196,3 +196,16 @@ Animated sprite creation is bounded by animation/frame limits to avoid unbounded
 TileMap editing supports explicit erasure, but `source_id=-1` requires `confirm_erase=true`. The gateway checks this before calling the bridge, and the bridge independently rejects unconfirmed erase operations.
 
 Collision tools accept structured Shape2D definitions instead of arbitrary scripts. Primitive dimensions are normalized to valid positive values where appropriate.
+
+
+## 3D, navigation and animation boundaries
+
+Phase E/F operations remain typed editor actions. They do not expose a generic geometry scripting surface, raw RenderingServer/PhysicsServer command channel or arbitrary NavigationServer commands.
+
+Project-local Mesh/Navigation resources are resolved through the same project-root confinement used elsewhere.
+
+Convex collision point lists are bounded, Skeleton3D inspection is bounded by `max_bones`, and navigation creation accepts only structured 2D/3D settings.
+
+Animation authoring is constrained to an existing AnimationPlayer/AnimationTree selected in the edited scene. Track types are allowlisted and state-machine operations use explicit state names and transitions.
+
+Nexora Godot MCP configures Godot-side gameplay structures. Upstream mesh/rig modeling remains a separate responsibility for tools such as Nexora Forge MCP.
