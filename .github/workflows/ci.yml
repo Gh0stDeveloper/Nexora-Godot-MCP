@@ -49,6 +49,6 @@ jobs:
           printf '{"host":"127.0.0.1","port":9877,"secret":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","auto_start":false}\n' > tests/godot_fixture/.nexora-godot/bridge.json
       - name: Parse project and run Phase B editor smoke
         run: |
-          set -o pipefail
-          godot --headless --editor --path tests/godot_fixture --quit-after 5 2>&1 | tee /tmp/nexora-godot.log
+          godot --headless --editor --path tests/godot_fixture --quit-after 5 > /tmp/nexora-godot.log 2>&1
+          cat /tmp/nexora-godot.log
           grep -q "NEXORA_PHASE_B_SMOKE_OK" /tmp/nexora-godot.log
