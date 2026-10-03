@@ -37,4 +37,38 @@ func _run_smoke() -> void:
 		print("NEXORA_PHASE_B_SMOKE_FAIL scenes: ", scenes)
 		return
 
+	var created: Dictionary = phase_b.execute(
+		"scene.create",
+		{
+			"root_type": "Node3D",
+			"name": "GeneratedSmoke",
+			"path": "res://generated_smoke.tscn",
+			"open_after_create": false,
+			"overwrite": true,
+		}
+	)
+	if created.has("__nexora_error"):
+		print("NEXORA_PHASE_B_SMOKE_FAIL create: ", created)
+		return
+
+	var duplicated: Dictionary = phase_b.execute(
+		"scene.duplicate",
+		{
+			"source_path": "res://generated_smoke.tscn",
+			"destination_path": "res://generated_smoke_copy.tscn",
+			"overwrite": true,
+		}
+	)
+	if duplicated.has("__nexora_error"):
+		print("NEXORA_PHASE_B_SMOKE_FAIL duplicate: ", duplicated)
+		return
+
+	var generated_resource: Dictionary = phase_b.execute(
+		"resource.inspect",
+		{"path": "res://generated_smoke_copy.tscn", "max_properties": 20}
+	)
+	if generated_resource.has("__nexora_error"):
+		print("NEXORA_PHASE_B_SMOKE_FAIL generated resource: ", generated_resource)
+		return
+
 	print("NEXORA_PHASE_B_SMOKE_OK")
