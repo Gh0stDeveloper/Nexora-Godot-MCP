@@ -4,11 +4,18 @@ extends EditorPlugin
 const PhaseD = preload("res://addons/nexora_godot_mcp/phase_d.gd")
 
 
+var _wait_frames := 0
+
+
 func _enter_tree() -> void:
-	call_deferred("_open_fixture")
+	set_process(true)
 
 
-func _open_fixture() -> void:
+func _process(_delta: float) -> void:
+	_wait_frames += 1
+	if _wait_frames < 5:
+		return
+	set_process(false)
 	EditorInterface.open_scene_from_path("res://phase_d_scene.tscn")
 	call_deferred("_run_smoke")
 
