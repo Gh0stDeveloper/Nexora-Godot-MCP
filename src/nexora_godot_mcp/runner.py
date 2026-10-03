@@ -263,6 +263,17 @@ class GodotCliRunner:
             presets.append(current)
         return presets
 
+    @staticmethod
+    def _artifact_metadata(output_path: Path) -> dict[str, object] | None:
+        if not output_path.is_file():
+            return None
+        data = output_path.read_bytes()
+        return {
+            "path": str(output_path),
+            "size_bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+        }
+
     async def export(
         self,
         *,
@@ -289,11 +300,8 @@ class GodotCliRunner:
             timeout_seconds=max(self.timeout_seconds, 900.0),
         )
         payload = result.as_dict()
-        if result.returncode == 0 and output_path.is_file():
-            data = output_path.read_bytes()
-            payload["artifact"] = {
-                "path": str(output_path),
-                "size_bytes": len(data),
-                "sha256": hashlib.sha256(data).hexdigest(),
-            }
+        if result.returncode == 0:
+            artifact = await asyncio.to_thread(self._artifact_metadata, output_path)
+            if artifact is not None:
+                payload["artifact"] = artifact
         return payload
