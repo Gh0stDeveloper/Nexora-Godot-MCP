@@ -162,8 +162,11 @@ func _scene_duplicate(params: Dictionary) -> Dictionary:
 		return _failure("source and destination must be different")
 	if not ResourceLoader.exists(source_path, "PackedScene"):
 		return _failure("source scene does not exist or is not importable")
-	if FileAccess.file_exists(destination_path) and not overwrite:
-		return _failure("destination scene already exists; overwrite=true is required")
+	if FileAccess.file_exists(destination_path):
+		if not overwrite:
+			return _failure("destination scene already exists; overwrite=true is required")
+		if destination_path in EditorInterface.get_open_scenes():
+			return _failure("refusing to overwrite a scene that is currently open in the editor")
 
 	var loaded := ResourceLoader.load(
 		source_path,
@@ -396,6 +399,9 @@ func _node_reparent(params: Dictionary) -> Dictionary:
 		return _failure("node has no current parent")
 	var old_index := node.get_index()
 	var old_owner = node.owner
+	var new_owner = root
+	if old_owner != null and (old_owner == new_parent or old_owner.is_ancestor_of(new_parent)):
+		new_owner = old_owner
 	var new_index := int(params.get("new_index", -1))
 	if new_index < -1:
 		return _failure("new_index must be -1 or greater")
@@ -408,7 +414,7 @@ func _node_reparent(params: Dictionary) -> Dictionary:
 		node,
 		new_parent,
 		new_index,
-		root
+		new_owner
 	)
 	undo_redo.add_undo_method(
 		self,
