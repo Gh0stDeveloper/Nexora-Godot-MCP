@@ -1,8 +1,8 @@
 # Tool catalog
 
-This document distinguishes the **implemented Phase A–C surface** from the broader planned catalog.
+This document distinguishes the **implemented Phase A–D surface** from the broader planned catalog.
 
-## Implemented in Phase A–C
+## Implemented in Phase A–D
 
 ### System
 
@@ -355,6 +355,104 @@ Removes the autoload registration without deleting its source resource. `confirm
 
 Permission: destructive/write.
 
+## UI and 2D
+
+### `ui_create_control`
+
+Creates a Control-derived node with optional text, minimum size and bounded safe properties.
+
+Permission: standard/write.
+
+### `ui_create_container`
+
+Creates supported Godot Container types such as VBoxContainer, HBoxContainer, GridContainer, MarginContainer, CenterContainer and PanelContainer.
+
+Permission: standard/write.
+
+### `ui_set_layout`
+
+Sets Control anchors/offsets directly or through common responsive presets including `full_rect`, `center`, corner presets and wide-edge presets.
+
+Layout mutations use editor Undo/Redo.
+
+Permission: standard/write.
+
+### `ui_theme_apply`
+
+Applies an optional project-local Theme resource, theme type variation, and bounded color/font-size/constant overrides.
+
+Permission: standard/write.
+
+### `ui_text_set`
+
+Updates text on supported Controls with Undo/Redo.
+
+Permission: standard/write.
+
+### `ui_create_hud`
+
+Builds a CanvasLayer HUD scaffold containing margin/container structure and title, health and objective labels.
+
+Permission: standard/write.
+
+### `ui_create_menu`
+
+Builds a centered CanvasLayer menu scaffold with a title and up to 20 buttons. Button signals remain configurable through the Phase C signal tools.
+
+Permission: standard/write.
+
+### `sprite2d_create`
+
+Creates Sprite2D with optional project-local Texture2D, position, flip state and sprite-sheet frame configuration.
+
+Permission: standard/write.
+
+### `animated_sprite2d_create`
+
+Creates AnimatedSprite2D plus an in-scene SpriteFrames resource from up to 32 animations and 256 project-local texture frames.
+
+Permission: standard/write.
+
+### `tilemap_layer_create`
+
+Creates TileMapLayer using an existing project-local TileSet or a new empty TileSet with optional tile size.
+
+Permission: standard/write.
+
+### `tilemap_inspect`
+
+Inspects either TileMapLayer or legacy TileMap and returns a bounded list of used cells, atlas identifiers and used bounds.
+
+Permission: read.
+
+### `tilemap_set_cells`
+
+Writes up to 500 cells through editor Undo/Redo.
+
+Any cell with `source_id=-1` is treated as an erase operation and requires `confirm_erase=true`.
+
+Permission: standard/write with explicit erase gate.
+
+### `camera2d_create`
+
+Creates Camera2D with position, zoom, enabled state, position smoothing and optional limits.
+
+Permission: standard/write.
+
+### `collision2d_shape_create`
+
+Creates CollisionShape2D beneath an existing CollisionObject2D.
+
+Supported structured shapes include circle, rectangle, capsule, segment, world boundary and convex polygon.
+
+Permission: standard/write.
+
+### `collision2d_body_create`
+
+Creates a StaticBody2D, CharacterBody2D, RigidBody2D or Area2D together with a child CollisionShape2D.
+
+Permission: standard/write.
+
 ## Runtime
 
 ### `project_run`
@@ -468,27 +566,23 @@ The following categories are intentionally planned as dedicated structured tools
 
 ## UI
 
-- `ui_create_control`
-- `ui_create_container`
-- `ui_set_layout`
-- `ui_theme_apply`
-- `ui_text_set`
+- richer reusable Theme resource authoring;
+- focus-neighbor/navigation helpers;
+- advanced responsive layout recipes.
 
 ## 2D/3D
 
-- sprites and animated sprites;
-- TileMap/TileMapLayer inspection;
-- Camera2D/Camera3D;
+- Camera3D;
 - MeshInstance3D;
-- collision shapes;
+- 3D collision shapes;
 - lights;
 - WorldEnvironment.
 
 ## Physics/navigation
 
-- CharacterBody/RigidBody/StaticBody creation;
-- collision layers and masks;
-- Area2D/Area3D;
+- 2D/3D collision layers and masks;
+- 3D CharacterBody/RigidBody/StaticBody creation;
+- Area3D;
 - NavigationRegion;
 - NavigationAgent;
 - NavigationLink.
