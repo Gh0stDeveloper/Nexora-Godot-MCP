@@ -73,15 +73,24 @@ Status: **implemented**
 
 ## Phase D — UI and 2D
 
-- Control creation;
-- container layouts;
-- anchors/offsets;
-- themes;
-- common HUD/menu workflows;
-- Sprite2D/AnimatedSprite2D;
-- TileMap/TileMapLayer;
-- Camera2D;
-- 2D collision.
+Status: **implemented**
+
+- Control-derived node creation;
+- supported Container creation, including GridContainer columns;
+- responsive anchors/offsets through explicit values and common layout presets;
+- Theme resource assignment, type variations and bounded local overrides;
+- undoable text editing for supported Controls;
+- common HUD scaffold generation;
+- common centered menu scaffold generation;
+- Sprite2D creation with project-local textures and sprite-sheet frames;
+- AnimatedSprite2D + SpriteFrames creation with bounded animation/frame lists;
+- TileMapLayer creation with existing or empty TileSet resources;
+- TileMapLayer and legacy TileMap inspection;
+- undoable TileMap cell editing with explicit erase confirmation;
+- Camera2D creation with zoom, smoothing and limits;
+- CollisionShape2D creation with structured Shape2D definitions;
+- StaticBody2D/CharacterBody2D/RigidBody2D/Area2D collision workflow creation;
+- Phase D Godot 4.6.3 editor smoke coverage.
 
 ## Phase E — 3D and gameplay structures
 
