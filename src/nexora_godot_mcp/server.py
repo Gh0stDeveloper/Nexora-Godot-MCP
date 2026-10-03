@@ -362,13 +362,13 @@ async def scene_create(
 
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def scene_open_scenes() -> dict[str, Any]:
-    """List open and unsaved Godot editor scenes."""
+    """List open Godot editor scenes and the active scene."""
     return await _call_bridge("scene.open_scenes")
 
 
 @mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
 async def scene_reload(confirm_discard: bool = False) -> dict[str, Any]:
-    """Reload the active scene from disk. Unsaved changes require confirm_discard=true."""
+    """Reload the active scene from disk. confirm_discard=true is always required."""
     return await _call_bridge(
         "scene.reload",
         {"confirm_discard": confirm_discard},
@@ -378,7 +378,7 @@ async def scene_reload(confirm_discard: bool = False) -> dict[str, Any]:
 
 @mcp.tool(annotations=DESTRUCTIVE_TOOL)  # type: ignore[untyped-decorator]
 async def scene_close(confirm_discard: bool = False) -> dict[str, Any]:
-    """Close the active scene. Unsaved changes require confirm_discard=true."""
+    """Close the active scene. confirm_discard=true is always required."""
     return await _call_bridge(
         "scene.close",
         {"confirm_discard": confirm_discard},
