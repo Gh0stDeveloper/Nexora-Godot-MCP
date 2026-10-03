@@ -13,7 +13,7 @@ func _enter_tree() -> void:
 
 func _process(_delta: float) -> void:
 	_wait_frames += 1
-	if _wait_frames < 5:
+	if _wait_frames < 12:
 		return
 	set_process(false)
 	EditorInterface.open_scene_from_path("res://phase_d_scene.tscn")

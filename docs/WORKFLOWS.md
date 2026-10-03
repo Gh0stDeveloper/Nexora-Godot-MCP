@@ -194,3 +194,62 @@ project_validate
 ```
 
 Tile erasure requires explicit confirmation. Texture and TileSet resources remain confined to the configured Godot project.
+
+
+## Build a 3D gameplay scene
+
+```text
+scene_snapshot
+ ↓
+mesh3d_create
+ ↓
+collision3d_body_create
+ ↓
+light3d_create
+ ↓
+world_environment_create
+ ↓
+camera3d_create
+ ↓
+scene_save
+ ↓
+project_validate
+```
+
+For custom modeled meshes, the MCP host can use Nexora Forge MCP independently and then import/reimport the resulting asset in Godot.
+
+## Add navigation to an actor
+
+```text
+navigation_region_create
+ ↓
+navigation_agent_create
+ ↓
+navigation_link_create (optional)
+ ↓
+navigation_inspect
+```
+
+Navigation regions can start with empty NavigationMesh/NavigationPolygon resources or use existing project-local resources.
+
+## Build an animation state machine
+
+```text
+animation_player_create
+ ↓
+animation_create
+ ↓
+animation_track_add
+ ↓
+animation_key_insert
+ ↓
+animation_tree_create
+ ↓
+animation_state_add
+ ↓
+animation_transition_add
+ ↓
+animation_tree_inspect
+```
+
+Phase F keeps animation and state-machine editing inside Godot; Forge remains responsible for upstream 3D modeling/rig authoring when needed.

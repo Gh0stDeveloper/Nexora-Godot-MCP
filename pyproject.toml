@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nexora-godot-mcp"
-version = "0.4.0"
+version = "0.6.0"
 description = "Secure local-first MCP gateway for AI-native Godot development."
 readme = "README.md"
 requires-python = ">=3.11"

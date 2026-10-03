@@ -54,7 +54,7 @@ def _create_mcp() -> Any:
             "Nexora Godot MCP",
             title="Nexora Godot MCP",
             description="Secure local-first AI-native Godot development gateway",
-            version="0.4.0",
+            version="0.6.0",
             instructions=instructions,
             token_verifier=IntrospectionTokenVerifier(settings),
             auth=AuthSettings(
@@ -68,7 +68,7 @@ def _create_mcp() -> Any:
         "Nexora Godot MCP",
         title="Nexora Godot MCP",
         description="Secure local-first AI-native Godot development gateway",
-        version="0.4.0",
+        version="0.6.0",
         instructions=instructions,
     )
 
@@ -212,7 +212,7 @@ async def health(_: Request) -> JSONResponse:
     return JSONResponse(
         {
             "service": "Nexora Godot MCP",
-            "version": "0.4.0",
+            "version": "0.6.0",
             "status": "ok",
             "auth_mode": settings.auth_mode,
             "permission_profile": settings.permission_profile,
@@ -238,7 +238,7 @@ async def godot_status() -> dict[str, Any]:
         version = None
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.4.0",
+        "version": "0.6.0",
         "godot_version": version,
         "project_root": str(settings.resolved_project_root),
         "bridge": bridge_result,
@@ -1491,6 +1491,500 @@ async def collision2d_body_create(
     )
 
 
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def mesh3d_create(
+    parent_path: str,
+    name: str,
+    primitive: Literal["box", "sphere", "capsule", "cylinder", "plane", "quad"] = "box",
+    mesh_path: str | None = None,
+    position: list[float] | None = None,
+    rotation: list[float] | None = None,
+    scale: list[float] | None = None,
+    size: list[float] | None = None,
+    size2d: list[float] | None = None,
+    radius: float = 0.5,
+    height: float = 1.0,
+    top_radius: float = 0.5,
+    bottom_radius: float = 0.5,
+) -> dict[str, Any]:
+    """Create MeshInstance3D using a project-local Mesh resource or a supported primitive mesh."""
+    resource_path: str | None = None
+    if mesh_path:
+        resource_path = _resource_path(mesh_path, must_exist=True)
+    return await _call_bridge(
+        "mesh3d.create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "primitive": primitive,
+            "mesh_path": resource_path or "",
+            "position": position,
+            "rotation": rotation,
+            "scale": scale,
+            "size": size,
+            "size2d": size2d,
+            "radius": radius,
+            "height": height,
+            "top_radius": top_radius,
+            "bottom_radius": bottom_radius,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def camera3d_create(
+    parent_path: str,
+    name: str,
+    position: list[float] | None = None,
+    rotation: list[float] | None = None,
+    fov: float = 75.0,
+    near: float = 0.05,
+    far: float = 4000.0,
+    current: bool = False,
+) -> dict[str, Any]:
+    """Create Camera3D with transform and projection-distance settings."""
+    return await _call_bridge(
+        "camera3d.create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "position": position,
+            "rotation": rotation,
+            "fov": fov,
+            "near": near,
+            "far": far,
+            "current": current,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def light3d_create(
+    parent_path: str,
+    light_type: Literal["DirectionalLight3D", "OmniLight3D", "SpotLight3D"],
+    name: str,
+    position: list[float] | None = None,
+    rotation: list[float] | None = None,
+    color: list[float] | None = None,
+    energy: float = 1.0,
+    shadow_enabled: bool = False,
+    range: float = 5.0,
+    spot_angle: float = 45.0,
+) -> dict[str, Any]:
+    """Create a supported Godot Light3D node."""
+    return await _call_bridge(
+        "light3d.create",
+        {
+            "parent_path": parent_path,
+            "light_type": light_type,
+            "name": name,
+            "position": position,
+            "rotation": rotation,
+            "color": color,
+            "energy": energy,
+            "shadow_enabled": shadow_enabled,
+            "range": range,
+            "spot_angle": spot_angle,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def world_environment_create(
+    parent_path: str = ".",
+    name: str = "WorldEnvironment",
+    background_mode: Literal["clear_color", "color", "sky", "canvas", "keep"] = "color",
+    background_color: list[float] | None = None,
+    ambient_light_color: list[float] | None = None,
+    ambient_light_energy: float = 1.0,
+) -> dict[str, Any]:
+    """Create WorldEnvironment plus an Environment resource with bounded background/ambient settings."""
+    return await _call_bridge(
+        "world_environment.create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "background_mode": background_mode,
+            "background_color": background_color,
+            "ambient_light_color": ambient_light_color,
+            "ambient_light_energy": ambient_light_energy,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def collision3d_shape_create(
+    parent_path: str,
+    name: str,
+    shape: dict[str, Any],
+    position: list[float] | None = None,
+    rotation: list[float] | None = None,
+    scale: list[float] | None = None,
+    disabled: bool = False,
+) -> dict[str, Any]:
+    """Create CollisionShape3D beneath an existing CollisionObject3D."""
+    if not shape:
+        raise ValueError("shape cannot be empty")
+    return await _call_bridge(
+        "collision3d.shape_create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "shape": shape,
+            "position": position,
+            "rotation": rotation,
+            "scale": scale,
+            "disabled": disabled,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def collision3d_body_create(
+    parent_path: str,
+    body_type: Literal["StaticBody3D", "CharacterBody3D", "RigidBody3D", "Area3D"],
+    name: str,
+    shape: dict[str, Any],
+    position: list[float] | None = None,
+    rotation: list[float] | None = None,
+    scale: list[float] | None = None,
+    collision_layer: int = 1,
+    collision_mask: int = 1,
+    monitoring: bool = True,
+    monitorable: bool = True,
+) -> dict[str, Any]:
+    """Create a supported CollisionObject3D body/area plus a child CollisionShape3D."""
+    if not shape:
+        raise ValueError("shape cannot be empty")
+    if collision_layer < 0 or collision_mask < 0:
+        raise ValueError("collision_layer and collision_mask must be non-negative")
+    return await _call_bridge(
+        "collision3d.body_create",
+        {
+            "parent_path": parent_path,
+            "body_type": body_type,
+            "name": name,
+            "shape": shape,
+            "position": position,
+            "rotation": rotation,
+            "scale": scale,
+            "collision_layer": collision_layer,
+            "collision_mask": collision_mask,
+            "monitoring": monitoring,
+            "monitorable": monitorable,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def skeleton3d_inspect(
+    node_path: str,
+    max_bones: int = 256,
+) -> dict[str, Any]:
+    """Inspect Skeleton3D bone hierarchy, rest transforms and current poses."""
+    if not 1 <= max_bones <= 1024:
+        raise ValueError("max_bones must be between 1 and 1024")
+    return await _call_bridge(
+        "skeleton3d.inspect",
+        {"node_path": node_path, "max_bones": max_bones},
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def navigation_region_create(
+    parent_path: str,
+    name: str,
+    dimension: Literal["2d", "3d"] = "3d",
+    map_resource_path: str | None = None,
+    enabled: bool = True,
+    navigation_layers: int = 1,
+    enter_cost: float = 0.0,
+    travel_cost: float = 1.0,
+    position: list[float] | None = None,
+    rotation: list[float] | None = None,
+) -> dict[str, Any]:
+    """Create NavigationRegion2D/3D using an existing map resource or a new empty one."""
+    resource_path: str | None = None
+    if map_resource_path:
+        resource_path = _resource_path(map_resource_path, must_exist=True)
+    return await _call_bridge(
+        "navigation.region_create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "dimension": dimension,
+            "map_resource_path": resource_path or "",
+            "enabled": enabled,
+            "navigation_layers": navigation_layers,
+            "enter_cost": enter_cost,
+            "travel_cost": travel_cost,
+            "position": position,
+            "rotation": rotation,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def navigation_agent_create(
+    parent_path: str,
+    name: str,
+    dimension: Literal["2d", "3d"] = "3d",
+    navigation_layers: int = 1,
+    path_desired_distance: float | None = None,
+    target_desired_distance: float | None = None,
+    radius: float | None = None,
+    height: float = 1.0,
+    max_speed: float | None = None,
+    avoidance_enabled: bool = False,
+    target_position: list[float] | None = None,
+) -> dict[str, Any]:
+    """Create NavigationAgent2D/3D with pathfinding and avoidance parameters."""
+    params: dict[str, Any] = {
+        "parent_path": parent_path,
+        "name": name,
+        "dimension": dimension,
+        "navigation_layers": navigation_layers,
+        "height": height,
+        "avoidance_enabled": avoidance_enabled,
+        "target_position": target_position,
+    }
+    if path_desired_distance is not None:
+        params["path_desired_distance"] = path_desired_distance
+    if target_desired_distance is not None:
+        params["target_desired_distance"] = target_desired_distance
+    if radius is not None:
+        params["radius"] = radius
+    if max_speed is not None:
+        params["max_speed"] = max_speed
+    return await _call_bridge("navigation.agent_create", params, mutating=True)
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def navigation_link_create(
+    parent_path: str,
+    name: str,
+    start_position: list[float],
+    end_position: list[float],
+    dimension: Literal["2d", "3d"] = "3d",
+    enabled: bool = True,
+    bidirectional: bool = True,
+    navigation_layers: int = 1,
+    enter_cost: float = 0.0,
+    travel_cost: float = 1.0,
+) -> dict[str, Any]:
+    """Create NavigationLink2D/3D between explicit local endpoints."""
+    return await _call_bridge(
+        "navigation.link_create",
+        {
+            "parent_path": parent_path,
+            "name": name,
+            "dimension": dimension,
+            "start_position": start_position,
+            "end_position": end_position,
+            "enabled": enabled,
+            "bidirectional": bidirectional,
+            "navigation_layers": navigation_layers,
+            "enter_cost": enter_cost,
+            "travel_cost": travel_cost,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def navigation_inspect(node_path: str) -> dict[str, Any]:
+    """Inspect a supported navigation region, agent or link."""
+    return await _call_bridge("navigation.inspect", {"node_path": node_path})
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animation_player_create(
+    parent_path: str,
+    name: str = "AnimationPlayer",
+) -> dict[str, Any]:
+    """Create an AnimationPlayer in the edited scene."""
+    return await _call_bridge(
+        "animation.player_create",
+        {"parent_path": parent_path, "name": name},
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animation_create(
+    player_path: str,
+    animation: str,
+    library: str = "",
+    length: float = 1.0,
+    loop_mode: Literal["none", "linear", "pingpong"] = "none",
+) -> dict[str, Any]:
+    """Create an Animation resource inside an AnimationPlayer library."""
+    return await _call_bridge(
+        "animation.create",
+        {
+            "player_path": player_path,
+            "animation": animation,
+            "library": library,
+            "length": length,
+            "loop_mode": loop_mode,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def animation_inspect(player_path: str) -> dict[str, Any]:
+    """Inspect libraries, animations, lengths and track counts on AnimationPlayer."""
+    return await _call_bridge(
+        "animation.inspect",
+        {"player_path": player_path},
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animation_track_add(
+    player_path: str,
+    animation: str,
+    path: str,
+    track_type: Literal[
+        "value",
+        "position_3d",
+        "rotation_3d",
+        "scale_3d",
+        "blend_shape",
+        "method",
+        "bezier",
+        "audio",
+        "animation",
+    ] = "value",
+    library: str = "",
+) -> dict[str, Any]:
+    """Add an animation track and bind it to a Godot NodePath/property path."""
+    return await _call_bridge(
+        "animation.track_add",
+        {
+            "player_path": player_path,
+            "animation": animation,
+            "library": library,
+            "track_type": track_type,
+            "path": path,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animation_key_insert(
+    player_path: str,
+    animation: str,
+    track_index: int,
+    time: float,
+    value: Any,
+    library: str = "",
+    transition: float = 1.0,
+) -> dict[str, Any]:
+    """Insert or replace one key on an Animation track with editor Undo/Redo support."""
+    if track_index < 0:
+        raise ValueError("track_index must be >= 0")
+    if time < 0.0:
+        raise ValueError("time must be >= 0")
+    return await _call_bridge(
+        "animation.key_insert",
+        {
+            "player_path": player_path,
+            "animation": animation,
+            "library": library,
+            "track_index": track_index,
+            "time": time,
+            "value": value,
+            "transition": transition,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animation_tree_create(
+    parent_path: str,
+    animation_player_path: str,
+    name: str = "AnimationTree",
+    active: bool = True,
+) -> dict[str, Any]:
+    """Create AnimationTree backed by AnimationNodeStateMachine and connect it to AnimationPlayer."""
+    return await _call_bridge(
+        "animation_tree.create",
+        {
+            "parent_path": parent_path,
+            "animation_player_path": animation_player_path,
+            "name": name,
+            "active": active,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animation_state_add(
+    tree_path: str,
+    state_name: str,
+    animation: str,
+    position: list[float] | None = None,
+) -> dict[str, Any]:
+    """Add an AnimationNodeAnimation state to an AnimationTree state machine."""
+    return await _call_bridge(
+        "animation_tree.state_add",
+        {
+            "tree_path": tree_path,
+            "state_name": state_name,
+            "animation": animation,
+            "position": position,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=WRITE_TOOL)  # type: ignore[untyped-decorator]
+async def animation_transition_add(
+    tree_path: str,
+    from_state: str,
+    to_state: str,
+    xfade_time: float = 0.0,
+    switch_mode: Literal["immediate", "sync", "at_end"] = "immediate",
+    advance_mode: Literal["disabled", "enabled", "auto"] = "disabled",
+) -> dict[str, Any]:
+    """Connect two AnimationTree state-machine states."""
+    return await _call_bridge(
+        "animation_tree.transition_add",
+        {
+            "tree_path": tree_path,
+            "from_state": from_state,
+            "to_state": to_state,
+            "xfade_time": xfade_time,
+            "switch_mode": switch_mode,
+            "advance_mode": advance_mode,
+        },
+        mutating=True,
+    )
+
+
+@mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
+async def animation_tree_inspect(tree_path: str) -> dict[str, Any]:
+    """Inspect AnimationTree state-machine states and transitions."""
+    return await _call_bridge(
+        "animation_tree.inspect",
+        {"tree_path": tree_path},
+    )
+
+
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def resource_inspect(
     path: str,
@@ -1655,10 +2149,10 @@ async def batch_execute(
 
 @mcp.tool(annotations=READ_ONLY)  # type: ignore[untyped-decorator]
 async def nexora_capabilities() -> dict[str, Any]:
-    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-D surface."""
+    """Describe the dedicated Godot MCP scope, permission mode and current Phase A-F surface."""
     return {
         "name": "Nexora Godot MCP",
-        "version": "0.4.0",
+        "version": "0.6.0",
         "dedicated_application": "Godot Engine",
         "all_in_one": False,
         "provider_agnostic": True,
@@ -1684,6 +2178,16 @@ async def nexora_capabilities() -> dict[str, Any]:
             "tilemaps",
             "camera2d",
             "collision2d",
+            "3d",
+            "meshes",
+            "camera3d",
+            "lights3d",
+            "environment3d",
+            "collision3d",
+            "skeleton3d",
+            "navigation",
+            "animation",
+            "animation_tree",
             "runtime",
             "export",
             "batch",

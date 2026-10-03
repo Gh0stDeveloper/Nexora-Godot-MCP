@@ -5,12 +5,16 @@ const BridgeServer = preload("res://addons/nexora_godot_mcp/bridge_server.gd")
 const PhaseB = preload("res://addons/nexora_godot_mcp/phase_b.gd")
 const PhaseC = preload("res://addons/nexora_godot_mcp/phase_c.gd")
 const PhaseD = preload("res://addons/nexora_godot_mcp/phase_d.gd")
+const PhaseE = preload("res://addons/nexora_godot_mcp/phase_e.gd")
+const PhaseF = preload("res://addons/nexora_godot_mcp/phase_f.gd")
 const CONFIG_PATH := "res://.nexora-godot/bridge.json"
 
 var _bridge = BridgeServer.new()
 var _phase_b
 var _phase_c
 var _phase_d
+var _phase_e
+var _phase_f
 var _dock: VBoxContainer
 var _status_label: Label
 var _project_label: Label
@@ -22,6 +26,8 @@ func _enter_tree() -> void:
 	_phase_b = PhaseB.new(self)
 	_phase_c = PhaseC.new(self)
 	_phase_d = PhaseD.new(self)
+	_phase_e = PhaseE.new(self)
+	_phase_f = PhaseF.new(self)
 	_build_dock()
 	_bridge_config = _load_bridge_config()
 	if bool(_bridge_config.get("auto_start", true)):
@@ -156,6 +162,16 @@ func execute_operation(operation: String, params: Dictionary) -> Dictionary:
 		var phase_d_result: Dictionary = _phase_d.execute(operation, params)
 		if not phase_d_result.has("__nexora_unhandled"):
 			return phase_d_result
+
+	if _phase_e != null:
+		var phase_e_result: Dictionary = _phase_e.execute(operation, params)
+		if not phase_e_result.has("__nexora_unhandled"):
+			return phase_e_result
+
+	if _phase_f != null:
+		var phase_f_result: Dictionary = _phase_f.execute(operation, params)
+		if not phase_f_result.has("__nexora_unhandled"):
+			return phase_f_result
 
 	return _failure("unsupported_operation: %s" % operation)
 
