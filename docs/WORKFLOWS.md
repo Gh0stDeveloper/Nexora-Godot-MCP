@@ -41,9 +41,9 @@ script_read
  ↓
 inspect SHA-256
  ↓
-produce corrected source
+script_patch(expected_sha256)
  ↓
-script_replace(expected_sha256)
+script_check
  ↓
 project_validate
  ↓
@@ -52,7 +52,7 @@ project_run
 runtime_logs
 ```
 
-The revision hash protects newer human edits from stale replacement.
+The revision hash protects newer human edits from stale replacement. `script_patch` additionally rejects ambiguous search blocks rather than guessing which occurrence the AI intended.
 
 ## Run a gameplay test
 
@@ -118,3 +118,38 @@ Validation:
 ```
 
 The server should expose structured facts so the host does not invent this summary.
+
+
+## Wire gameplay with signals
+
+```text
+scene_snapshot
+ ↓
+script_attach
+ ↓
+script_symbols
+ ↓
+signal_list
+ ↓
+signal_connect
+ ↓
+scene_save
+ ↓
+project_validate
+```
+
+Persistent signal connections default to the editor-persistent flag and remain undoable.
+
+## Configure controls
+
+```text
+input_actions_list
+ ↓
+input_action_create("interact")
+ ↓
+input_event_add({"type":"key","physical_keycode":...})
+ ↓
+input_actions_list
+```
+
+Input actions and bindings are persisted to the Godot project rather than existing only for the current editor process.
