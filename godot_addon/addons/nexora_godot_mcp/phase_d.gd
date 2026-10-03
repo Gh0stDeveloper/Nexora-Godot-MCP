@@ -236,7 +236,7 @@ func _ui_layout_set(params: Dictionary) -> Dictionary:
 			offsets[3] = float(offsets[1]) + requested_size.y
 			next_state["offsets"] = offsets
 		else:
-			control.custom_minimum_size = requested_size
+			next_state["minimum_size"] = requested_size
 
 	var undo_redo := _plugin.get_undo_redo()
 	undo_redo.create_action("Nexora: Set UI Layout", UndoRedo.MERGE_DISABLE, root)
@@ -385,7 +385,6 @@ func _ui_hud_create(params: Dictionary) -> Dictionary:
 	objective.text = String(params.get("objective_text", ""))
 	stack.add_child(objective)
 
-	_set_subtree_owner(layer, root)
 	_commit_add_node(root, parent, layer, "Nexora: Create HUD")
 	return {
 		"path": str(root.get_path_to(layer)),
@@ -456,7 +455,6 @@ func _ui_menu_create(params: Dictionary) -> Dictionary:
 		stack.add_child(button)
 		button_paths.append(button.name)
 
-	_set_subtree_owner(layer, root)
 	_commit_add_node(root, parent, layer, "Nexora: Create Menu")
 	var resolved_buttons: Array[String] = []
 	for child in stack.get_children():
@@ -724,6 +722,7 @@ func _tilemap_set_cells(params: Dictionary) -> Dictionary:
 	if typeof(raw_cells) != TYPE_ARRAY or raw_cells.is_empty() or raw_cells.size() > 500:
 		return _failure("cells must contain between 1 and 500 entries")
 
+	var confirm_erase := bool(params.get("confirm_erase", false))
 	var changes: Array[Dictionary] = []
 	for cell_variant in raw_cells:
 		if typeof(cell_variant) != TYPE_DICTIONARY:
@@ -734,6 +733,8 @@ func _tilemap_set_cells(params: Dictionary) -> Dictionary:
 			return coords_result
 		var coords: Vector2i = coords_result["value"]
 		var source_id := int(cell.get("source_id", -1))
+		if source_id < 0 and not confirm_erase:
+			return _failure("confirm_erase=true is required when erasing TileMap cells")
 		var atlas_coords := Vector2i(-1, -1)
 		if cell.has("atlas_coords"):
 			var atlas_result := _vector2i_from_required(cell.get("atlas_coords"), "atlas_coords")
@@ -925,9 +926,6 @@ func _collision2d_body_create(params: Dictionary) -> Dictionary:
 	if position_result.has("value") and body is Node2D:
 		body.position = position_result["value"]
 
-	parent.add_child(body, true)
-	_set_subtree_owner(body, root)
-	parent.remove_child(body)
 	_commit_add_node(root, parent, body, "Nexora: Create 2D Collision Body")
 	return {
 		"path": str(root.get_path_to(body)),
@@ -1090,6 +1088,7 @@ func _control_layout_state(control: Control) -> Dictionary:
 			control.offset_right,
 			control.offset_bottom,
 		],
+		"minimum_size": control.custom_minimum_size,
 	}
 
 
@@ -1168,6 +1167,8 @@ func _apply_control_layout_state(control: Control, state: Dictionary) -> void:
 	control.offset_top = float(offsets[1])
 	control.offset_right = float(offsets[2])
 	control.offset_bottom = float(offsets[3])
+	if state.has("minimum_size"):
+		control.custom_minimum_size = state["minimum_size"]
 
 
 func _validate_theme_override_map(raw, kind: String) -> Dictionary:
