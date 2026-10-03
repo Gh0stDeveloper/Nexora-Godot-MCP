@@ -324,10 +324,10 @@ func _skeleton3d_inspect(params: Dictionary) -> Dictionary:
 
 	var max_bones := clampi(int(params.get("max_bones", 256)), 1, 1024)
 	var bones: Array[Dictionary] = []
-	var count := node.get_bone_count()
+	var count: int = node.get_bone_count()
 	for index in range(mini(count, max_bones)):
-		var rest := node.get_bone_rest(index)
-		var pose := node.get_bone_pose(index)
+		var rest: Transform3D = node.get_bone_rest(index)
+		var pose: Transform3D = node.get_bone_pose(index)
 		bones.append({
 			"index": index,
 			"name": String(node.get_bone_name(index)),
